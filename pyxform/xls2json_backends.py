@@ -356,7 +356,8 @@ def csv_to_dict(path_or_file):
                 content = None
             return (s_or_c, content)
 
-    reader = csv.reader(csv_data.split("\n"))
+    reader = csv.reader(csv_data.split("\n"), \
+                        quotechar='"', doublequote=True, escapechar='\\')
     sheet_name = None
     current_headers = None
     for ascii_row in reader:
