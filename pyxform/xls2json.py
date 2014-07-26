@@ -12,6 +12,18 @@ from errors import PyXFormError
 from xls2json_backends import xls_to_dict, csv_to_dict
 from utils import is_valid_xml_tag
 
+
+label_optional_types = [
+    u"deviceid",
+    u"phonenumber",
+    u"simserial",
+    u"calculate",
+    u"start",
+    u"end",
+    u"today"
+]
+
+
 def print_pyobj_to_json(pyobj, path=None):
     """
     dump a python nested array/dict structure to the specified file
@@ -206,7 +218,7 @@ def has_double_colon(workbook_dict):
 
 def add_flat_annotations(prompt_list, parent_relevant = '', name_prefix = ''):
     """
-    This is a helper function for generating flat instances 
+    This is a helper function for generating flat instances
     for the benefit of ODK Tables.
     It makes the following modifications to the survey:
     X Renames prompts with their group name as a prefix
@@ -225,7 +237,7 @@ def add_flat_annotations(prompt_list, parent_relevant = '', name_prefix = ''):
                 new_relevant += ' and (' + prompt_relevant + ')'
         elif prompt_relevant != '':
             new_relevant = prompt_relevant
-        
+
         children = prompt.get(constants.CHILDREN)
         if children:
             prompt['flat'] = True
@@ -389,13 +401,13 @@ def workbook_to_json(
                     if headername not in warnedabout:
                         warnedabout.add(headername)
                         warnings.append("On the choices sheet there is " +
-                                        "a column (\"" + 
-                                        headername + 
+                                        "a column (\"" +
+                                        headername +
                                         "\") with an illegal header. " +
                                         "Headers cannot include spaces.")
                     del option[headername]
                 elif headername == '':
-                    warnings.append("On the choices sheet there is a value" + 
+                    warnings.append("On the choices sheet there is a value" +
                                     " in a column with no header.")
                     del option[headername]
     ########### Survey sheet ###########
@@ -658,9 +670,16 @@ def workbook_to_json(
             parse_dict = select_parse.groupdict()
             if parse_dict.get("select_command"):
                 select_type = aliases.select[parse_dict["select_command"]]
+                if select_type == 'select one external'\
+                   and not 'choice_filter' in row:
+                    warnings.append(rowFormatString % row_number +
+                        u" select one external is only meant for"
+                        u" filtered selects.")
+                    select_type = aliases.select['select_one']
                 list_name = parse_dict["list_name"]
 
-                if list_name not in choices:
+                if list_name not in choices\
+                   and select_type != 'select one external':
                     if not choices:
                         raise PyXFormError(
                             u"There should be a choices sheet in this xlsform."
@@ -714,8 +733,11 @@ def workbook_to_json(
                 new_json_dict[constants.TYPE] = select_type
 
                 if row.get('choice_filter'):
-                    new_json_dict['itemset'] = list_name
-                    json_dict['choices'] = choices
+                    if select_type == 'select one external':
+                        new_json_dict['query'] = list_name
+                    else:
+                        new_json_dict['itemset'] = list_name
+                        json_dict['choices'] = choices
                 else:
                     new_json_dict[constants.CHOICES] = choices[list_name]
 

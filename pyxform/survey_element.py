@@ -31,6 +31,7 @@ class SurveyElement(dict):
         u"default": unicode,
         u"type": unicode,
         u"appearance": unicode,
+        u"intent": unicode,
         u"jr:count" : unicode,
         u"bind": dict,
         u"control": dict,
@@ -40,6 +41,7 @@ class SurveyElement(dict):
         u"children": list,
         u"itemset": unicode,
         u"choice_filter": unicode,
+        u"query": unicode,
         u"autoplay": unicode,
         u"flat": lambda: False,
     }

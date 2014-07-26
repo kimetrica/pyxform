@@ -217,6 +217,22 @@ QUESTION_TYPE_DICT = \
             "type": "geopoint"
         }
     }, 
+    "q geoshape": {
+        "control": {
+            "tag": "input"
+        }, 
+        "bind": {
+            "type": "geoshape"
+        }
+    }, 
+    "q geotrace": {
+        "control": {
+            "tag": "input"
+        }, 
+        "bind": {
+            "type": "geotrace"
+        }
+    }, 
     "q image": {
         "control": {
             "tag": "upload", 
@@ -291,6 +307,14 @@ QUESTION_TYPE_DICT = \
         "bind": {
             "type": "select1"
         }
+    },
+    "select one external": {
+        "control": {
+            "tag": "input"
+        }, 
+        "bind": {
+            "type": "string"
+        }
     }, 
     "add image prompt": {
         "control": {
@@ -339,6 +363,24 @@ QUESTION_TYPE_DICT = \
         }, 
         "bind": {
             "type": "geopoint"
+        }, 
+        "hint": "GPS coordinates can only be collected when outside."
+    }, 
+    "geoshape": {
+        "control": {
+            "tag": "input"
+        }, 
+        "bind": {
+            "type": "geoshape"
+        }, 
+        "hint": "GPS coordinates can only be collected when outside."
+    }, 
+    "geotrace": {
+        "control": {
+            "tag": "input"
+        }, 
+        "bind": {
+            "type": "geotrace"
         }, 
         "hint": "GPS coordinates can only be collected when outside."
     }, 

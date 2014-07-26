@@ -36,11 +36,28 @@ class InputQuestion(Question):
         control_dict = self.control
         label_and_hint = self.xml_label_and_hint()
         control_dict['ref'] = self.get_xpath()
+
+        # for SurveyCTO's support for external intents, resolve field references in appearance column:
+        survey = self.get_root()
+        appearance=control_dict.get('appearance')
+        if appearance is not None:
+            control_dict['appearance'] = survey.insert_xpaths(appearance)
+
         result = node(**control_dict)
         if label_and_hint:
             for element in self.xml_label_and_hint():
                 result.appendChild(element)
+        
+        # Input types are used for selects with external choices sheets.
+        if self['query']:
+            choice_filter = self.get('choice_filter')
+            query = "instance('" + self['query'] + "')/root/item"
+            choice_filter = survey.insert_xpaths(choice_filter)
+            if choice_filter:
+                query += '[' + choice_filter + ']'
+            result.setAttribute('query', query)
         return result
+
 
 class TriggerQuestion(Question):
 
@@ -146,8 +163,15 @@ class MultipleChoiceQuestion(Question):
     def xml_control(self):
         assert self.bind[u"type"] in [u"select", u"select1"]
 
+        survey = self.get_root()
         control_dict = self.control.copy()
         control_dict['ref'] = self.get_xpath()
+
+        # for SurveyCTO's dynamic-select support, resolve field references in appearance column:
+        appearance = control_dict.get('appearance')
+        if appearance is not None:
+            control_dict['appearance'] = survey.insert_xpaths(appearance)
+
         result = node(**control_dict)
         for element in self.xml_label_and_hint():
             result.appendChild(element)
