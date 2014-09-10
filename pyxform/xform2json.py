@@ -167,7 +167,7 @@ class XFormToDict:
             else:
                 self._root = etree.fromstring(root, parser)
             self._dict = ConvertXmlToDict(self._root)
-        elif not isinstance(root, etree.Element):
+        elif not isinstance(root, etree._Element):
             raise TypeError('Expected ElementTree.Element or file path string')
 
     def get_dict(self):
