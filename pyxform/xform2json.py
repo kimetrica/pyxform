@@ -206,7 +206,9 @@ class XFormToDictBuilder:
         self.body = doc_as_dict['html']['body']
         self.model = doc_as_dict['html']['head']['model']
         self.bindings = copy.deepcopy(self.model['bind'])
-        self._bind_list = copy.deepcopy(self.model['bind'])
+        if isinstance(self.bindings, dict):
+            self.bindings= [self.bindings]        
+        self._bind_list = copy.deepcopy(self.bindings)
         self.title = doc_as_dict['html']['head']['title']
         self.new_doc = {
             "type": "survey",
