@@ -1,12 +1,19 @@
+# Python standard library.
+import re
 import tempfile
+import codecs
+import os
+import base64
+import csv
+from datetime import datetime
+from collections import defaultdict
+# Dependencies.
+import xlwt
+# 'pyxform'-internal.
+import pyxform.question
 from section import Section
 from question import Question
-from utils import node, XFORM_TAG_REGEXP
-from collections import defaultdict
-import codecs
-from datetime import datetime
-import re
-import os
+from utils import node
 from odk_validate import check_xform
 from survey_element import SurveyElement
 from errors import PyXFormError
@@ -405,3 +412,103 @@ class Survey(Section):
         """
         from instance import SurveyInstance
         return SurveyInstance(self)
+            
+    
+    def _to_sheets_dict(self):
+        '''
+        Prepare a representation of the survey ready to be easily exported as a 
+        XLSForm spreadsheet.
+        
+        :return: Spreadsheet data (in rows) keyed by sheet name.
+        :rtype: {str: list(list)}
+        '''
+        
+        survey_sheet_columns= ['name', 'type', 'label']
+        survey_sheet_rows= [survey_sheet_columns]
+
+        choices_sheet_header= ['list name'] # Important that 'list name' has a known position (first is easiest).
+        choices_sheet_header.extend(['name', 'label'])
+        choices_sheet_rows= [choices_sheet_header]
+
+        questions= self['children']
+        for q in questions:
+            # Directly extract the fields from 'survey_sheet_columns' for this \
+            #   question. Each row of data is stored as an individual 'dict'.
+            survey_sheet_r= list()
+            for survey_col_name in survey_sheet_columns:
+                # Special handling for select-type questions.
+                if isinstance(q, pyxform.question.MultipleChoiceQuestion) and \
+                  ( q.get(survey_col_name, '') in \
+                    [constants.SELECT_ONE, constants.SELECT_ALL_THAT_APPLY] ):
+                    random_string= base64.urlsafe_b64encode(os.urandom(16))
+                    random_string= random_string[:-2] # Remove the two "=" characters from the end.
+                    # Strip out any non-alphanumeric characters so KoBoForm can \
+                    #   import (decreasing the space of possible strings, while \
+                    #   an egregious affront, should be safe)
+                    random_string= re.compile('[\W_]+').sub('', random_string)
+                    cell_text= q[survey_col_name] + ' ' + random_string
+                    
+                    # Extract and record the choices.
+                    choices= q['children']
+                    for c in choices:
+                        choices_sheet_r= [random_string]
+                        for choices_col_name in choices_sheet_header[1:]:
+                            choices_sheet_r.append(c.get(choices_col_name, ''))
+                        choices_sheet_rows.append(choices_sheet_r)
+                # Non-select questions
+                else:
+                    cell_text= q.get(survey_col_name, '') # Default to an empty cell if the field doesn't exist for this question.
+                    
+                survey_sheet_r.append(cell_text)
+                            
+            survey_sheet_rows.append(survey_sheet_r)
+            
+        return {'survey': survey_sheet_rows, 'choices': choices_sheet_rows}
+        
+    
+    def to_xls(self, out_file_path):
+        '''
+        Convert the survey to a XLS-encoded XForm.
+        
+        :param str out_file_path: Filesystem path to the desired output file.
+        '''
+        
+        # Organize the data for spreadsheet output.
+        sheets_dict= self._to_sheets_dict()
+        
+        # Prepare an XLS workbook to be written to.
+        workbook= xlwt.Workbook()
+        
+        # Enter the data.
+        for sheet_name, sheet_data in sheets_dict.iteritems():
+            sheet= workbook.add_sheet(sheet_name)
+            
+            # Populate the sheet row-by-row.
+            for i_row, row_data_list in enumerate(sheet_data):
+                for i_col, cell_data in enumerate(row_data_list):
+                    sheet.write(i_row, i_col, cell_data)
+        
+        workbook.save(out_file_path)
+    
+           
+    def to_csv(self, out_file_path):
+        '''
+        Convert the survey to a CSV-formatted XForm.
+        
+        :param str out_file_path: Filesystem path to the desired output file.
+        '''
+        
+        # Organize the data for spreadsheet output.
+        sheets_dict= self._to_sheets_dict()
+        
+        with open(out_file_path, 'w') as out_file:
+            writer= csv.writer(out_file)
+            
+            for sheet_name, sheet_data in sheets_dict.iteritems():
+                # Write the sheet name in the first column on its own row.
+                writer.writerow([sheet_name])
+                
+                # Write the sheet's data.
+                for row_data in sheet_data:
+                    # Enter data starting after the sheet name column.
+                    writer.writerow([''] + row_data)
