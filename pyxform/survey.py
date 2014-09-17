@@ -55,6 +55,7 @@ class Survey(Section):
             u"style": unicode
         }
     )
+        
 
     def validate(self):
         super(Survey, self).validate()
@@ -423,11 +424,16 @@ class Survey(Section):
         :rtype: {str: list(list)}
         '''
         
-        survey_sheet_columns= ['name', 'type', 'label']
+        form_id, form_title= self[constants.NAME], self[constants.TITLE]
+        settings_sheet_rows= [['form_id', 'form_title']]
+        settings_sheet_rows.append([form_id, form_title])
+        
+        
+        survey_sheet_columns= [constants.NAME, constants.TYPE, constants.LABEL]
         survey_sheet_rows= [survey_sheet_columns]
 
-        choices_sheet_header= ['list name'] # Important that 'list name' has a known position (first is easiest).
-        choices_sheet_header.extend(['name', 'label'])
+        choices_sheet_header= [constants.LIST_NAME] # Important that 'list name' has a known position (first is easiest).
+        choices_sheet_header.extend([constants.NAME, constants.LABEL])
         choices_sheet_rows= [choices_sheet_header]
 
         questions= self['children']
@@ -449,7 +455,7 @@ class Survey(Section):
                     cell_text= q[survey_col_name] + ' ' + random_string
                     
                     # Extract and record the choices.
-                    choices= q['children']
+                    choices= q[constants.CHILDREN]
                     for c in choices:
                         choices_sheet_r= [random_string]
                         for choices_col_name in choices_sheet_header[1:]:
@@ -463,7 +469,9 @@ class Survey(Section):
                             
             survey_sheet_rows.append(survey_sheet_r)
             
-        return {'survey': survey_sheet_rows, 'choices': choices_sheet_rows}
+        return {constants.SETTINGS: settings_sheet_rows, \
+                constants.SURVEY: survey_sheet_rows, \
+                constants.CHOICES: choices_sheet_rows}
         
     
     def to_xls(self, out_file_path):
