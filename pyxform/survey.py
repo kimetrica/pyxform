@@ -444,20 +444,26 @@ class Survey(Section):
             for survey_col_name in survey_sheet_columns:
                 # Special handling for select-type questions.
                 if isinstance(q, pyxform.question.MultipleChoiceQuestion) and \
-                  ( q.get(survey_col_name, '') in \
-                    [constants.SELECT_ONE, constants.SELECT_ALL_THAT_APPLY] ):
-                    random_string= base64.urlsafe_b64encode(os.urandom(16))
-                    random_string= random_string[:-2] # Remove the two "=" characters from the end.
+                        ( q.get(survey_col_name, '') in \
+                          [constants.SELECT_ONE, constants.SELECT_ALL_THAT_APPLY] ):
+                    # TODO: Would be nice to reuse the 'list name' when 
+                    #   encountering reused sets of choices. 
+                    list_name= base64.urlsafe_b64encode(os.urandom(16))
+                    list_name= list_name[:-2] # Remove the two "=" characters from the end.
                     # Strip out any non-alphanumeric characters so KoBoForm can \
                     #   import (decreasing the space of possible strings, while \
                     #   an egregious affront, should be safe)
-                    random_string= re.compile('[\W_]+').sub('', random_string)
-                    cell_text= q[survey_col_name] + ' ' + random_string
+                    list_name= re.compile('[\W_]+').sub('', list_name)
+                    if q['type'] == constants.SELECT_ONE:
+                        question_type_text= constants.SELECT_ONE_XLSFORM
+                    elif q['type'] == constants.SELECT_ALL_THAT_APPLY:
+                        question_type_text= constants.SELECT_ALL_THAT_APPLY_XLSFORM
+                    cell_text= question_type_text + ' ' + list_name
                     
                     # Extract and record the choices.
                     choices= q[constants.CHILDREN]
                     for c in choices:
-                        choices_sheet_r= [random_string]
+                        choices_sheet_r= [list_name]
                         for choices_col_name in choices_sheet_header[1:]:
                             choices_sheet_r.append(c.get(choices_col_name, ''))
                         choices_sheet_rows.append(choices_sheet_r)

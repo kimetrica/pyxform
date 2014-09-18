@@ -38,7 +38,9 @@ GROUP = u"group"
 CHILDREN = u"children"
 
 SELECT_ONE = u"select one"
+SELECT_ONE_XLSFORM= u'select_one'
 SELECT_ALL_THAT_APPLY = u"select all that apply"
+SELECT_ALL_THAT_APPLY_XLSFORM= u'select_multiple'
 CHOICES = u"choices"
 
 # XLS Specific constants
