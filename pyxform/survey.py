@@ -519,4 +519,6 @@ class Survey(Section):
                 # Write the sheet's data.
                 for row_data in sheet_data:
                     # Enter data starting after the sheet name column.
-                    writer.writerow([''] + row_data)
+                    unicode_row_data= [cell_text.encode("utf-8") \
+                                       for cell_text in row_data]
+                    writer.writerow([''] + unicode_row_data)
