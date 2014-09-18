@@ -424,11 +424,20 @@ class Survey(Section):
         :rtype: {str: list(list)}
         '''
         
-        form_id, form_title= self[constants.NAME], self[constants.TITLE]
-        settings_sheet_rows= [['form_id', 'form_title']]
-        settings_sheet_rows.append([form_id, form_title])
+        # Record the survey's settings if present.
+        settings_sheet_header= list()
+        settings_sheet_data= list()
+        survey_keys= self.keys()
+        if constants.NAME in survey_keys:
+            settings_sheet_header.append('form_id')
+            settings_sheet_data.append(self[constants.NAME])
+        if constants.TITLE in survey_keys:
+            settings_sheet_header.append('form_title')
+            settings_sheet_data.append(self[constants.TITLE])
+        # TODO: More settings at xlsform.org.
+        settings_sheet_rows= [settings_sheet_header, settings_sheet_data]
         
-        
+        # Record the survey's questions (and multiple-choice option if any).
         survey_sheet_columns= [constants.NAME, constants.TYPE, constants.LABEL]
         survey_sheet_rows= [survey_sheet_columns]
 
@@ -458,6 +467,8 @@ class Survey(Section):
                         question_type_text= constants.SELECT_ONE_XLSFORM
                     elif q['type'] == constants.SELECT_ALL_THAT_APPLY:
                         question_type_text= constants.SELECT_ALL_THAT_APPLY_XLSFORM
+                    else:
+                        raise PyXFormError('Unexpected multiple-choice question type "{}"'.format(question_type_text))
                     cell_text= question_type_text + ' ' + list_name
                     
                     # Extract and record the choices.
@@ -474,11 +485,22 @@ class Survey(Section):
                 survey_sheet_r.append(cell_text)
                             
             survey_sheet_rows.append(survey_sheet_r)
-            
+        
+        # Assume there are always questions to record.
+        sheets_dict= {constants.SURVEY: survey_sheet_rows}
+        if len(settings_sheet_rows) > 1:
+            sheets_dict[constants.SETTINGS]= settings_sheet_rows
+        if len(choices_sheet_rows) > 1:
+            sheets_dict[constants.CHOICES]= choices_sheet_rows
+        
+        form_id, form_title= self[constants.NAME], self[constants.TITLE]
+        settings_sheet_rows= [['form_id', 'form_title']]
+        settings_sheet_rows.append([form_id, form_title])
+
         return {constants.SETTINGS: settings_sheet_rows, \
                 constants.SURVEY: survey_sheet_rows, \
                 constants.CHOICES: choices_sheet_rows}
-        
+    
     
     def to_xls(self, out_file_path):
         '''
