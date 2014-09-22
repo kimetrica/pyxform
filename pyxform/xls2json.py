@@ -675,7 +675,7 @@ def workbook_to_json(
                     warnings.append(rowFormatString % row_number +
                         u" select one external is only meant for"
                         u" filtered selects.")
-                    select_type = aliases.select['select_one']
+                    select_type = aliases.select[constants.SELECT_ONE_XLSFORM]
                 list_name = parse_dict["list_name"]
 
                 if list_name not in choices\

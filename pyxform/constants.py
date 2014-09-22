@@ -38,9 +38,13 @@ GROUP = u"group"
 CHILDREN = u"children"
 
 SELECT_ONE = u"select one"
+SELECT_ONE_XFORM= u'select1'
 SELECT_ONE_XLSFORM= u'select_one'
+
 SELECT_ALL_THAT_APPLY = u"select all that apply"
+SELECT_ALL_THAT_APPLY_XFORM= u'select'
 SELECT_ALL_THAT_APPLY_XLSFORM= u'select_multiple'
+
 CHOICES = u"choices"
 
 # XLS Specific constants
@@ -56,4 +60,3 @@ CHOICES = u"choices"
 COLUMNS = u"columns" #this is for loop statements
 CHOICES_AND_COLUMNS = u"choices and columns"
 CASCADING_CHOICES = u"cascades"
-

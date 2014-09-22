@@ -14,16 +14,19 @@ control = {
     u"looped group": constants.REPEAT
 }
 select = {
+    u"select_one_external": u"select one external",
+    # Select one.
+    constants.SELECT_ONE:           constants.SELECT_ONE,
+    constants.SELECT_ONE_XLSFORM:   constants.SELECT_ONE, # XLSForm canonical.
+    constants.SELECT_ONE_XFORM:     constants.SELECT_ONE, # KoBoForm.
+    u"select one from":             constants.SELECT_ONE,
     u"add select one prompt using": constants.SELECT_ONE,
-    u"add select multiple prompt using": constants.SELECT_ALL_THAT_APPLY,
-    u"select all that apply from": constants.SELECT_ALL_THAT_APPLY,
-    u"select one from": constants.SELECT_ONE,
-    u"select1": constants.SELECT_ONE,
-    u"select_one": constants.SELECT_ONE,
-    u"select one": constants.SELECT_ONE,
-    u"select_multiple": constants.SELECT_ALL_THAT_APPLY,
-    u"select all that apply": constants.SELECT_ALL_THAT_APPLY,
-    u"select_one_external": u"select one external"
+    # Select multiple.
+    constants.SELECT_ALL_THAT_APPLY:            constants.SELECT_ALL_THAT_APPLY,
+    constants.SELECT_ALL_THAT_APPLY_XLSFORM:    constants.SELECT_ALL_THAT_APPLY, # XLSForm canonical.
+    constants.SELECT_ALL_THAT_APPLY_XFORM:      constants.SELECT_ALL_THAT_APPLY, # KoBoForm.
+    u"select all that apply from":              constants.SELECT_ALL_THAT_APPLY,
+    u"add select multiple prompt using":        constants.SELECT_ALL_THAT_APPLY,
 }
 cascading = {
     u'cascading select': constants.CASCADING_SELECT,

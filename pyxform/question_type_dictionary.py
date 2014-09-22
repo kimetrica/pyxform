@@ -1,4 +1,5 @@
 from xls2json import QuestionTypesReader, print_pyobj_to_json
+from pyxform import constants
 
 def generate_new_dict():
     """
@@ -8,6 +9,24 @@ def generate_new_dict():
     path_to_question_types = "/home/nathan/aptana-workspace/pyxform/pyxform/question_types/all.xls"
     json_dict = QuestionTypesReader(path_to_question_types).to_json_dict()
     print_pyobj_to_json(json_dict, 'new_quesiton_type_dict.json')
+
+_SELECT_1_TYPE_DICT= {
+    "control": {
+        "tag": constants.SELECT_ONE_XFORM
+    }, 
+    "bind": {
+        "type": constants.SELECT_ONE_XFORM
+    }
+}
+
+_SELECT_TYPE_DICT= {
+    "control": {
+        "tag": constants.SELECT_ALL_THAT_APPLY_XFORM
+    }, 
+    "bind": {
+        "type": constants.SELECT_ALL_THAT_APPLY_XFORM
+    }
+}
 
 QUESTION_TYPE_DICT = \
 {
@@ -68,14 +87,6 @@ QUESTION_TYPE_DICT = \
             "jr:preloadParams": "start"
         }
     }, 
-    "add select multiple prompt using": {
-        "control": {
-            "tag": "select"
-        }, 
-        "bind": {
-            "type": "select"
-        }
-    }, 
     "add note prompt": {
         "control": {
             "tag": "input"
@@ -112,14 +123,6 @@ QUESTION_TYPE_DICT = \
         }, 
         "bind": {
             "type": "string"
-        }
-    }, 
-    "select all that apply from": {
-        "control": {
-            "tag": "select"
-        }, 
-        "bind": {
-            "type": "select"
         }
     }, 
     "simserial": {
@@ -300,14 +303,6 @@ QUESTION_TYPE_DICT = \
             "type": "geopoint"
         }
     }, 
-    "select one": {
-        "control": {
-            "tag": "select1"
-        }, 
-        "bind": {
-            "type": "select1"
-        }
-    },
     "select one external": {
         "control": {
             "tag": "input"
@@ -323,14 +318,6 @@ QUESTION_TYPE_DICT = \
         }, 
         "bind": {
             "type": "binary"
-        }
-    }, 
-    "select all that apply": {
-        "control": {
-            "tag": "select"
-        }, 
-        "bind": {
-            "type": "select"
         }
     }, 
     "get end time": {
@@ -384,14 +371,6 @@ QUESTION_TYPE_DICT = \
         }, 
         "hint": "GPS coordinates can only be collected when outside."
     }, 
-    "select multiple from": {
-        "control": {
-            "tag": "select"
-        }, 
-        "bind": {
-            "type": "select"
-        }
-    }, 
     "end time": {
         "bind": {
             "jr:preload": "timestamp", 
@@ -419,22 +398,6 @@ QUESTION_TYPE_DICT = \
         }, 
         "bind": {
             "type": "barcode"
-        }
-    }, 
-    "q select": {
-        "control": {
-            "tag": "select"
-        }, 
-        "bind": {
-            "type": "select"
-        }
-    }, 
-    "select one using": {
-        "control": {
-            "tag": "select1"
-        }, 
-        "bind": {
-            "type": "select1"
         }
     }, 
     "image": {
@@ -583,14 +546,6 @@ QUESTION_TYPE_DICT = \
             "type": "barcode"
         }
     }, 
-    "select multiple using": {
-        "control": {
-            "tag": "select"
-        }, 
-        "bind": {
-            "type": "select"
-        }
-    }, 
     "q decimal": {
         "control": {
             "tag": "input"
@@ -684,14 +639,6 @@ QUESTION_TYPE_DICT = \
             "type": "date"
         }
     }, 
-    "q select1": {
-        "control": {
-            "tag": "select1"
-        }, 
-        "bind": {
-            "type": "select1"
-        }
-    }, 
     "start time": {
         "bind": {
             "jr:preload": "timestamp", 
@@ -734,14 +681,6 @@ QUESTION_TYPE_DICT = \
             "type": "binary"
         }
     }, 
-    "add select one prompt using": {
-        "control": {
-            "tag": "select1"
-        }, 
-        "bind": {
-            "type": "select1"
-        }
-    },
     "hidden": {
         "bind": {
             "type": "string"
@@ -802,7 +741,23 @@ QUESTION_TYPE_DICT = \
             "type": "string", 
             "jr:preloadParams": "uri:email"
         }
-    }, 
+    },
+    
+    # FIXME: These seemingly could be condensed to one entry per question type if 'pyxform.aliases.select' were put to use.
+    # Select one.
+    constants.SELECT_ONE:           _SELECT_1_TYPE_DICT,
+    "add select one prompt using":  _SELECT_1_TYPE_DICT, # Already in 'pyxform.aliases.select'.
+    "select one using":             _SELECT_1_TYPE_DICT,
+    "q select1":                    _SELECT_1_TYPE_DICT,
+    
+    # Select multiple.
+    constants.SELECT_ALL_THAT_APPLY:        _SELECT_TYPE_DICT, 
+    "select all that apply":                _SELECT_TYPE_DICT, # Already in 'pyxform.aliases.select'.
+    "select all that apply from":           _SELECT_TYPE_DICT, # Already in 'pyxform.aliases.select'.
+    "add select multiple prompt using":     _SELECT_TYPE_DICT, # Already in 'pyxform.aliases.select'.
+    "select multiple from":                 _SELECT_TYPE_DICT,
+    "q select":                             _SELECT_TYPE_DICT,
+    "select multiple using":                _SELECT_TYPE_DICT,
 }
 
 #import os
