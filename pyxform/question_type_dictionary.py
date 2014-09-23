@@ -35,7 +35,7 @@ _IMAGE_TYPE= {
         "mediatype": "image/*"
     }, 
     "bind": {
-        "type": "binary"
+        "type": constants.BINARY_XFORM
     }
 }
 
@@ -45,7 +45,7 @@ _VIDEO_TYPE= {
         "mediatype": "video/*"
     }, 
     "bind": {
-        "type": "binary"
+        "type": constants.BINARY_XFORM
     }
 }
 
@@ -55,7 +55,7 @@ _AUDIO_TYPE= {
         "mediatype": "audio/*"
     }, 
     "bind": {
-        "type": "binary"
+        "type": constants.BINARY_XFORM
     }
 }
 
@@ -64,7 +64,7 @@ _DATE_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "date"
+        "type": constants.DATE_XFORM
     }
 }
 
@@ -73,7 +73,7 @@ _DATETIME_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "dateTime"
+        "type": constants.DATETIME_XFORM
     }
 }
 
@@ -82,7 +82,7 @@ _GEOPOINT_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "geopoint"
+        "type": constants.GEOPOINT_XFORM
     }
 }
 
@@ -94,7 +94,7 @@ _GEOSHAPE_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "geoshape"
+        "type": constants.GEOSHAPE_XFORM
     }
 }
 
@@ -106,7 +106,7 @@ _GEOTRACE_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "geotrace"
+        "type": constants.GEOTRACE_XFORM
     }
 }
 
@@ -118,7 +118,7 @@ _INT_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "int"
+        "type": constants.INT_XFORM
     }
 }
 
@@ -127,7 +127,7 @@ _DECIMAL_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "decimal"
+        "type": constants.DECIMAL_XFORM
     }
 }
 
@@ -136,7 +136,7 @@ _STRING_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "string"
+        "type": constants.STRING_XFORM
     }
 }
 
@@ -146,7 +146,7 @@ _NOTE_TYPE= {
     }, 
     "bind": {
         "readonly": "true()", 
-        "type": "string"
+        "type": constants.STRING_XFORM
     }
 }
 
@@ -155,7 +155,7 @@ _TRIGGER_TYPE= {
         "tag": "trigger"
     }, 
     "bind": {
-        "type": "string"
+        "type": constants.STRING_XFORM
     }
 }
 
@@ -164,69 +164,93 @@ _BARCODE_TYPE= {
         "tag": "input"
     }, 
     "bind": {
-        "type": "barcode"
-    }
-}
-
-_PHONENUMBER_TYPE= {
-    "bind": {
-        "jr:preload": "property", 
-        "type": "string", 
-        "jr:preloadParams": "phonenumber"
-    }
-}
-
-_START_TYPE= {
-    "bind": {
-        "jr:preload": "timestamp", 
-        "type": "dateTime", 
-        "jr:preloadParams": "start"
-    }
-}
-
-_END_TYPE= {
-    "bind": {
-        "jr:preload": "timestamp", 
-        "type": "dateTime", 
-        "jr:preloadParams": "end"
-    }
-}
-
-_SIMSERIAL_TYPE= {
-    "bind": {
-        "jr:preload": "property", 
-        "type": "string", 
-        "jr:preloadParams": "simserial"
-    }
-}
-
-_DEVICEID_TYPE= {
-    "bind": {
-        "jr:preload": "property", 
-        "type": "string", 
-        "jr:preloadParams": "deviceid"
-    }
-}
-
-_SUBSCRIBERID_TYPE= {
-    "bind": {
-        "jr:preload": "property", 
-        "type": "string", 
-        "jr:preloadParams": "subscriberid"
+        "type": constants.BARCODE_XFORM
     }
 }
 
 _TODAY_TYPE= {
     "bind": {
         "jr:preload": "date", 
-        "type": "date", 
+        "type": constants.DATE_XFORM, 
         "jr:preloadParams": "today"
     }
 }
 
 _NONINPUT_STING_TYPE= {
     "bind": {
-        "type": "string"
+        "type": constants.STRING_XFORM
+    }
+}
+
+# XForm.
+_START_TYPE= {
+    "bind": {
+        "jr:preload": "timestamp", 
+        "type": constants.DATETIME_XFORM, 
+        "jr:preloadParams": "start"
+    }
+}
+
+# XForm.
+_END_TYPE= {
+    "bind": {
+        "jr:preload": "timestamp", 
+        "type": constants.DATETIME_XFORM, 
+        "jr:preloadParams": "end"
+    }
+}
+
+# XForm.
+_DEVICEID_TYPE= {
+    "bind": {
+        "jr:preload": "property", 
+        "type": constants.STRING_XFORM, 
+        "jr:preloadParams": "deviceid"
+    }
+}
+
+# XForm.
+_EMAIL_TYPE= {
+    "bind": {
+        "jr:preload": "property", 
+        "type": constants.STRING_XFORM, 
+        "jr:preloadParams": "email"
+    }
+}
+
+# XForm.
+_USERNAME_TYPE= {
+    "bind": {
+        "jr:preload": "property", 
+        "type": constants.STRING_XFORM, 
+        "jr:preloadParams": "username"
+    }
+}
+
+# XForm.
+_PHONENUMBER_TYPE= {
+    "bind": {
+        "jr:preload": "property", 
+        "type": constants.STRING_XFORM, 
+        "jr:preloadParams": "phonenumber"
+    }
+}
+
+# XForm.
+_SIMSERIAL_TYPE= {
+    "bind": {
+        "jr:preload": "property", 
+        "type": constants.STRING_XFORM, 
+        "jr:preloadParams": "simserial"
+    }
+}
+
+# XForm.
+_SUBSCRIBERID_TYPE= {
+    "bind": {
+        "jr:preload": "property", 
+        "type": constants.STRING_XFORM, 
+        "jr:preloadParams": "subscriberid"
     }
 }
 
@@ -267,10 +291,10 @@ QUESTION_TYPE_DICT = \
     
     "add date prompt":  _DATE_TYPE,
     "q date":           _DATE_TYPE,
-    "date":             _DATE_TYPE,
+    constants.DATE_XFORM:             _DATE_TYPE,
     
     "datetime":             _DATETIME_TYPE, 
-    "dateTime":             _DATETIME_TYPE, 
+    constants.DATETIME_XFORM:             _DATETIME_TYPE, 
     "add dateTime prompt":  _DATETIME_TYPE, 
     "q dateTime":           _DATETIME_TYPE, 
     "date time":            _DATETIME_TYPE, 
@@ -280,28 +304,28 @@ QUESTION_TYPE_DICT = \
     "q location":           _GEOPOINT_TYPE,
     "add location prompt":  _GEOPOINT_TYPE,
     
-    "geopoint":     _GEOPOINT_TYPE_W_HINT,
+    constants.GEOPOINT_XFORM:     _GEOPOINT_TYPE_W_HINT,
     "gps":          _GEOPOINT_TYPE_W_HINT,
     
     "q geotrace":   _GEOTRACE_TYPE,
     
-    "geotrace":     _GEOTRACE_TYPE_W_HINT,
+    constants.GEOTRACE_XFORM:     _GEOTRACE_TYPE_W_HINT,
     
     "q geoshape":   _GEOSHAPE_TYPE,
     
-    "geoshape":     _GEOSHAPE_TYPE_W_HINT,
+    constants.GEOSHAPE_XFORM:     _GEOSHAPE_TYPE_W_HINT,
 
     "integer":              _INT_TYPE,
     "q int":                _INT_TYPE,
-    "int":                  _INT_TYPE,
+    constants.INT_XFORM:                  _INT_TYPE,
     "add integer prompt":   _INT_TYPE,
     
-    "decimal":              _DECIMAL_TYPE,
+    constants.DECIMAL_XFORM:              _DECIMAL_TYPE,
     "add decimal prompt":   _DECIMAL_TYPE,
     "q decimal":            _DECIMAL_TYPE,
     
     "text":                 _STRING_TYPE,
-    "string":               _STRING_TYPE,
+    constants.STRING_XFORM:               _STRING_TYPE,
     "q string":             _STRING_TYPE,
     "select one external":  _STRING_TYPE,
     "add text prompt":      _STRING_TYPE,
@@ -316,7 +340,7 @@ QUESTION_TYPE_DICT = \
     
     "add barcode prompt":   _BARCODE_TYPE,
     "q barcode":            _BARCODE_TYPE,
-    "barcode":              _BARCODE_TYPE,
+    constants.BARCODE_XFORM:              _BARCODE_TYPE,
 
     "phonenumber":          _PHONENUMBER_TYPE,
     "get phone number":     _PHONENUMBER_TYPE,
@@ -351,12 +375,15 @@ QUESTION_TYPE_DICT = \
     "add calculate prompt":     _NONINPUT_STING_TYPE, 
     "hidden":                   _NONINPUT_STING_TYPE,
     
+    "username": _USERNAME_TYPE, 
+    "email": _EMAIL_TYPE,
+    
     "number of days in last month": {
         "control": {
             "tag": "input"
         }, 
         "bind": {
-            "type": "int", 
+            "type": constants.INT_XFORM, 
             "constraint": "0 <= . and . <= 31"
         }, 
         "hint": "Enter a number 0-31."
@@ -371,7 +398,7 @@ QUESTION_TYPE_DICT = \
             "tag": "input"
         }, 
         "bind": {
-            "type": "int", 
+            "type": constants.INT_XFORM, 
             "constraint": "0 <= . and . <= 100"
         }
     }, 
@@ -380,7 +407,7 @@ QUESTION_TYPE_DICT = \
             "tag": "input"
         }, 
         "bind": {
-            "type": "int", 
+            "type": constants.INT_XFORM, 
             "constraint": "0 <= . and . <= 183"
         }, 
         "hint": "Enter a number 0-183."
@@ -390,7 +417,7 @@ QUESTION_TYPE_DICT = \
             "tag": "input"
         }, 
         "bind": {
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "constraint": "regex(., '^\\d*$')"
         }, 
         "hint": "Enter numbers only."
@@ -400,72 +427,58 @@ QUESTION_TYPE_DICT = \
             "tag": "input"
         }, 
         "bind": {
-            "type": "int", 
+            "type": constants.INT_XFORM, 
             "constraint": "0 <= . and . <= 365"
         }, 
         "hint": "Enter a number 0-365."
     }, 
-    "time": {
+    constants.TIME_XFORM: {
         "control": {
             "tag": "input"
         }, 
         "bind": {
-            "type": "time"
+            "type": constants.TIME_XFORM
         }
     }, 
     "uri:subscriberid": {
         "bind": {
             "jr:preload": "property", 
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "jr:preloadParams": "uri:subscriberid"
         }
     },
     "uri:phonenumber": {
         "bind": {
             "jr:preload": "property", 
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "jr:preloadParams": "uri:phonenumber"
         }
     },
     "uri:simserial": {
         "bind": {
             "jr:preload": "property", 
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "jr:preloadParams": "uri:simserial"
         }
     },
     "uri:deviceid": {
         "bind": {
             "jr:preload": "property", 
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "jr:preloadParams": "uri:deviceid"
-        }
-    }, 
-    "username": {
-        "bind": {
-            "jr:preload": "property", 
-            "type": "string", 
-            "jr:preloadParams": "username"
         }
     }, 
     "uri:username": {
         "bind": {
             "jr:preload": "property", 
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "jr:preloadParams": "uri:username"
         }
     }, 
-    "email": {
-        "bind": {
-            "jr:preload": "property", 
-            "type": "string", 
-            "jr:preloadParams": "email"
-        }
-    },
     "uri:email": {
         "bind": {
             "jr:preload": "property",
-            "type": "string", 
+            "type": constants.STRING_XFORM, 
             "jr:preloadParams": "uri:email"
         }
     },

@@ -37,15 +37,61 @@ REPEAT = u"repeat"
 GROUP = u"group"
 CHILDREN = u"children"
 
-SELECT_ONE = u"select one"
-SELECT_ONE_XFORM= u'select1'
-SELECT_ONE_XLSFORM= u'select_one'
+# Question/data types.
+# XForm: http://opendatakit.github.io/odk-xform-spec/#data-types.
+# XLSForm: http://xlsform.org/#question%20types.
+STRING_XFORM= u'string'
+STRING_XLSFORM= u'text'
 
-SELECT_ALL_THAT_APPLY = u"select all that apply"
+INT_XFORM= u'int'
+INT_XLSFORM= u'integer'
+
+BOOLEAN_XFORM= u'boolean'
+# Presumably boolean questions are represented as "select one" questions in XLSForms.
+
+DECIMAL_XFORM= u'decimal'
+DECIMAL_XLSFORM= DECIMAL_XFORM
+
+DATE_XFORM= u'date'
+DATE_XLSFORM= DATE_XFORM
+
+TIME_XFORM= u'time'
+TIME_XLSFORM= TIME_XFORM
+
+DATETIME_XFORM= u'dateTime'
+DATETIME_XLSFORM= DATETIME_XFORM
+
 SELECT_ALL_THAT_APPLY_XFORM= u'select'
 SELECT_ALL_THAT_APPLY_XLSFORM= u'select_multiple'
+SELECT_ALL_THAT_APPLY = u"select all that apply"
 
-CHOICES = u"choices"
+SELECT_ONE_XFORM= u'select1'
+SELECT_ONE_XLSFORM= u'select_one'
+SELECT_ONE = u"select one"
+
+GEOPOINT_XFORM= u'geopoint'
+GEOPOINT_XLSFORM= GEOPOINT_XFORM
+
+GEOTRACE_XFORM= u'geotrace'
+
+GEOSHAPE_XFORM= u'geoshape'
+
+BINARY_XFORM= u'binary'
+IMAGE_XLSFORM= u'image'
+AUDIO_XLSFORM= u'audio'
+VIDEO_XLSFORM= u'video'
+
+BARCODE_XFORM= u'barcode'
+BARCODE_XLSFORM= BARCODE_XFORM
+
+NOTE_XLSFORM= u'note'
+
+CALCULATE_XLSFORM= u'calculate'
+
+XFORM_TYPES= {STRING_XFORM, INT_XFORM, BOOLEAN_XFORM, DECIMAL_XFORM, DATE_XFORM, \
+              TIME_XFORM, DATETIME_XFORM, SELECT_ALL_THAT_APPLY_XFORM, \
+              SELECT_ONE_XFORM, GEOPOINT_XFORM, GEOTRACE_XFORM, GEOSHAPE_XFORM, \
+              BINARY_XFORM, BARCODE_XFORM}
 
 # XLS Specific constants
 LIST_NAME = u"list name"
