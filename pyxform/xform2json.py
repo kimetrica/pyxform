@@ -3,10 +3,13 @@ import re
 import json
 import copy
 import codecs
+from operator import itemgetter
 
 from lxml import etree
 from lxml.etree import ElementTree
-from operator import itemgetter
+
+import pyxform.aliases
+import pyxform.constants
 from pyxform import builder
 
 
@@ -185,8 +188,8 @@ def create_survey_element_from_xml(xml_file):
 class XFormToDictBuilder:
     '''Experimental XFORM xml to XFORM JSON'''
     QUESTION_TYPES = {
-        'select': 'select all that apply',
-        'select1': 'select one',
+        pyxform.constants.SELECT_ALL_THAT_APPLY_XFORM: pyxform.constants.SELECT_ALL_THAT_APPLY,
+        pyxform.constants.SELECT_ONE_XFORM: pyxform.constants.SELECT_ONE,
         'int': 'integer',
         'dateTime': 'datetime',
         'string': 'text'
@@ -207,7 +210,7 @@ class XFormToDictBuilder:
         self.model = doc_as_dict['html']['head']['model']
         self.bindings = copy.deepcopy(self.model['bind'])
         if isinstance(self.bindings, dict):
-            self.bindings= [self.bindings]        
+            self.bindings= [self.bindings]
         self._bind_list = copy.deepcopy(self.bindings)
         self.title = doc_as_dict['html']['head']['title']
         self.new_doc = {
@@ -227,14 +230,16 @@ class XFormToDictBuilder:
         # set self.translations
         self._set_translations()
 
-        for key, obj in self.body.iteritems():
-            if isinstance(obj, dict):
+        for body_element_tag, body_element in self.body.iteritems():
+            if isinstance(body_element, dict):
                 self.children.append(
-                    self._get_question_from_object(obj, type=key))
-            elif isinstance(obj, list):
-                for item in obj:
+                        self._get_question_from_object(body_element, \
+                                element_tag=body_element_tag))
+            elif isinstance(body_element, list):
+                for sub_element in body_element:
                     self.children.append(
-                        self._get_question_from_object(item, type=key))
+                        self._get_question_from_object(sub_element, \
+                                element_tag=body_element_tag))
         self._cleanup_bind_list()
         self._cleanup_children()
         self.new_doc['children'] = self.children
@@ -248,7 +253,17 @@ class XFormToDictBuilder:
         obj = self.bindings[0]
         name = obj['nodeset'].split('/')[1]
         self.new_doc['name'] = name
-        self.new_doc['id_string'] = self.model['instance'][name]['id']
+        
+        # If there are multiple 'instance' elements, get the primary.
+        if not isinstance(self.model['instance'], dict):
+            for i in self.model['instance']:
+                # See http://opendatakit.github.io/odk-xform-spec/#primary-instance.
+                # TODO: Check child for 'id' attribute too?
+                if len(i) == 1:
+                    primary_instance= i
+        else:
+            primary_instance= self.model['instance']
+        self.new_doc['id_string'] = primary_instance[name]['id']
 
     def _set_submission_info(self):
         if 'submission' in self.model:
@@ -352,16 +367,20 @@ class XFormToDictBuilder:
                     return self.ordered_binding_refs.index(i) + 1
             return self.ordered_binding_refs.__len__() + 1
 
-    def _get_question_from_object(self, obj, type=None):
+    def _get_question_from_object(self, obj, element_tag=None):
         ref = None
-        try:
+        if 'ref' in obj:
             ref = obj['ref']
-        except KeyError:
-            try:
-                ref = obj['nodeset']
-            except KeyError:
-                raise TypeError(
-                    'cannot find "ref" or "nodeset" in {}'.format(repr(obj)))
+        elif 'nodeset' in obj:
+            ref = obj['nodeset']
+        # Look for the 'nodeset' in this question's associated 'bind'.
+        elif any( (True for binding in self.bindings if binding['id'] == obj['bind']) ):
+            associated_binding= [binding for binding in self.bindings if binding['id'] == obj['bind']][0]
+            ref= associated_binding['nodeset']
+        else:
+            
+            raise TypeError('cannot find "ref" or "nodeset" in {} or associated bind {}'.format(repr(obj)))
+                
         question = {'ref': ref, '__order': self._get_question_order(ref)}
         question['name'] = self._get_name_from_ref(ref)
         if 'hint' in obj:
@@ -400,10 +419,25 @@ class XFormToDictBuilder:
                     children.append(
                         {'name': i['value'], k: v})
             question['children'] = children
-        question_type = question['type'] if 'type' in question else type
+        
+        # Record the question type.
+        if question.get('type', '').startswith('xsd:'):
+            # When encountering types prefixed with 'xsd:', remove the prefix \
+            #   and see if the element_tag defined in the form body should be used.
+            question['type']= question['type'].split('xsd:')[-1]
+            if element_tag != 'input':
+                question_type= element_tag
+            else:
+                question_type= question['type']
+        elif 'type' in question:
+            question_type= question['type']
+        else:
+            question_type= element_tag
+        # Form notes.
         if question_type == 'text' and 'bind' in question \
                 and 'readonly' in question['bind']:
             question_type = question['type'] = 'note'
+            # Remove the 'readonly' field of the 'bind' and remove it altogether if now empty.
             del question['bind']['readonly']
             if len(question['bind'].keys()) == 0:
                 del question['bind']
@@ -420,14 +454,23 @@ class XFormToDictBuilder:
                             self._shorten_xpaths_in_string(
                                 obj['repeat']['count'].strip())})
             else:
+                # A question group that is not repeated (?).
                 question['children'] = self._get_children_questions(obj)
-            question['type'] = question_type
-        if type == 'trigger':
-            question['type'] = 'acknowledge'
+        if element_tag == 'trigger':
+            question_type = 'acknowledge'
         if question_type == 'geopoint' and 'hint' in question:
             del question['hint']
-        if 'type' not in question and type:
+        
+        # Denote multiple choice questions as prescribed by xlsform.org.
+        if (question_type in pyxform.aliases.select):
+            if  pyxform.aliases.select[question_type] == pyxform.constants.SELECT_ONE:
+                question_type= pyxform.constants.SELECT_ONE_XLSFORM
+            elif pyxform.aliases.select[question_type] == pyxform.constants.SELECT_ALL_THAT_APPLY:
+                question_type= pyxform.constants.SELECT_ALL_THAT_APPLY_XLSFORM
+        
+        if question_type:
             question['type'] = question_type
+            
         return question
 
     def _get_children_questions(self, obj):
@@ -436,11 +479,11 @@ class XFormToDictBuilder:
             if k in ['ref', 'label', 'nodeset']:
                 continue
             if isinstance(v, dict):
-                child = self._get_question_from_object(v, type=k)
+                child = self._get_question_from_object(v, element_tag=k)
                 children.append(child)
             elif isinstance(v, list):
                 for i in v:
-                    child = self._get_question_from_object(i, type=k)
+                    child = self._get_question_from_object(i, element_tag=k)
                     children.append(child)
         return children
 
