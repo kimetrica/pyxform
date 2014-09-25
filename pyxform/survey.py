@@ -7,9 +7,9 @@ import base64
 import csv
 from datetime import datetime
 from collections import defaultdict
-# Dependencies.
-import xlwt
+
 # 'pyxform'-internal.
+import pyxform.survey_to_xlsform
 import pyxform.question
 from section import Section
 from question import Question
@@ -415,93 +415,6 @@ class Survey(Section):
         return SurveyInstance(self)
             
     
-    def _to_sheets_dict(self):
-        '''
-        Prepare a representation of the survey ready to be easily exported as a 
-        XLSForm spreadsheet.
-        
-        :return: Spreadsheet data (in rows) keyed by sheet name.
-        :rtype: {str: list(list)}
-        '''
-        
-        # Record the survey's settings if present.
-        settings_sheet_header= list()
-        settings_sheet_data= list()
-        survey_keys= self.keys()
-        if constants.NAME in survey_keys:
-            settings_sheet_header.append('form_id')
-            settings_sheet_data.append(self[constants.NAME])
-        if constants.TITLE in survey_keys:
-            settings_sheet_header.append('form_title')
-            settings_sheet_data.append(self[constants.TITLE])
-        # TODO: More settings at xlsform.org.
-        settings_sheet_rows= [settings_sheet_header, settings_sheet_data]
-        
-        # Record the survey's questions (and multiple-choice option if any).
-        survey_sheet_columns= [constants.NAME, constants.TYPE, constants.LABEL]
-        survey_sheet_rows= [survey_sheet_columns]
-
-        choices_sheet_header= [constants.LIST_NAME] # Important that 'list name' has a known position (first is easiest).
-        choices_sheet_header.extend([constants.NAME, constants.LABEL])
-        choices_sheet_rows= [choices_sheet_header]
-
-        questions= self['children']
-        for q in questions:
-            # Directly extract the fields from 'survey_sheet_columns' for this \
-            #   question. Each row of data is stored as an individual 'dict'.
-            survey_sheet_r= list()
-            for survey_col_name in survey_sheet_columns:
-                # Special handling for select-type questions.
-                if isinstance(q, pyxform.question.MultipleChoiceQuestion) and \
-                        ( q.get(survey_col_name, '') in \
-                          [constants.SELECT_ONE, constants.SELECT_ALL_THAT_APPLY] ):
-                    # TODO: Would be nice to reuse the 'list name' when 
-                    #   encountering reused sets of choices. 
-                    list_name= base64.urlsafe_b64encode(os.urandom(16))
-                    list_name= list_name[:-2] # Remove the two "=" characters from the end.
-                    # Strip out any non-alphanumeric characters so KoBoForm can \
-                    #   import (decreasing the space of possible strings, while \
-                    #   an egregious affront, should be safe)
-                    list_name= re.compile('[\W_]+').sub('', list_name)
-                    if q['type'] == constants.SELECT_ONE:
-                        question_type_text= constants.SELECT_ONE_XLSFORM
-                    elif q['type'] == constants.SELECT_ALL_THAT_APPLY:
-                        question_type_text= constants.SELECT_ALL_THAT_APPLY_XLSFORM
-                    else:
-                        raise PyXFormError('Unexpected multiple-choice question type "{}"'.format(question_type_text))
-                    cell_text= question_type_text + ' ' + list_name
-                    
-                    # Extract and record the choices.
-                    choices= q[constants.CHILDREN]
-                    for c in choices:
-                        choices_sheet_r= [list_name]
-                        for choices_col_name in choices_sheet_header[1:]:
-                            choices_sheet_r.append(c.get(choices_col_name, ''))
-                        choices_sheet_rows.append(choices_sheet_r)
-                # Non-select questions
-                else:
-                    cell_text= q.get(survey_col_name, '') # Default to an empty cell if the field doesn't exist for this question.
-                    
-                survey_sheet_r.append(cell_text)
-                            
-            survey_sheet_rows.append(survey_sheet_r)
-        
-        # Assume there are always questions to record.
-        sheets_dict= {constants.SURVEY: survey_sheet_rows}
-        if len(settings_sheet_rows) > 1:
-            sheets_dict[constants.SETTINGS]= settings_sheet_rows
-        if len(choices_sheet_rows) > 1:
-            sheets_dict[constants.CHOICES]= choices_sheet_rows
-        
-        form_id, form_title= self[constants.NAME], self[constants.TITLE]
-        settings_sheet_rows= [['form_id', 'form_title']]
-        settings_sheet_rows.append([form_id, form_title])
-
-        return {constants.SETTINGS: settings_sheet_rows, \
-                constants.SURVEY: survey_sheet_rows, \
-                constants.CHOICES: choices_sheet_rows}
-    
-    
     def to_xls(self, out_file_path):
         '''
         Convert the survey to a XLS-encoded XForm.
@@ -509,22 +422,7 @@ class Survey(Section):
         :param str out_file_path: Filesystem path to the desired output file.
         '''
         
-        # Organize the data for spreadsheet output.
-        sheets_dict= self._to_sheets_dict()
-        
-        # Prepare an XLS workbook to be written to.
-        workbook= xlwt.Workbook()
-        
-        # Enter the data.
-        for sheet_name, sheet_data in sheets_dict.iteritems():
-            sheet= workbook.add_sheet(sheet_name)
-            
-            # Populate the sheet row-by-row.
-            for i_row, row_data_list in enumerate(sheet_data):
-                for i_col, cell_data in enumerate(row_data_list):
-                    sheet.write(i_row, i_col, cell_data)
-        
-        workbook.save(out_file_path)
+        pyxform.survey_to_xlsform.to_xls(self, out_file_path)
     
            
     def to_csv(self, out_file_path):
@@ -534,19 +432,4 @@ class Survey(Section):
         :param str out_file_path: Filesystem path to the desired output file.
         '''
         
-        # Organize the data for spreadsheet output.
-        sheets_dict= self._to_sheets_dict()
-        
-        with open(out_file_path, 'w') as out_file:
-            writer= csv.writer(out_file)
-            
-            for sheet_name, sheet_data in sheets_dict.iteritems():
-                # Write the sheet name in the first column on its own row.
-                writer.writerow([sheet_name])
-                
-                # Write the sheet's data.
-                for row_data in sheet_data:
-                    # Enter data starting after the sheet name column.
-                    unicode_row_data= [cell_text.encode("utf-8") \
-                                       for cell_text in row_data]
-                    writer.writerow([''] + unicode_row_data)
+        pyxform.survey_to_xlsform.to_csv(self, out_file_path)

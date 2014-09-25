@@ -31,14 +31,14 @@ class ExportSpreadsheetTests(unittest.TestCase):
             xform_survey= pyxform.survey_from.xform(xform_in_p)
             self.surveys[xform_in_p]['xform'] = xform_survey
             
-            with tempfile.NamedTemporaryFile() as xls_tempfile:
+            with tempfile.NamedTemporaryFile(suffix='-pyxform.xls') as xls_tempfile:
                 # Export the XForm survey to an XLS-formatted XLSForm file.
                 xform_survey.to_xls(xls_tempfile.name)
                 # Import the XLSForm back in.
                 xls_survey= pyxform.survey_from.xls(xls_tempfile)
                 self.surveys[xform_in_p]['xls']= xls_survey
 
-            with tempfile.NamedTemporaryFile() as csv_tempfile:
+            with tempfile.NamedTemporaryFile(suffix='-pyxform.csv') as csv_tempfile:
                 # Export the XForm survey to a CSV-formatted XLSForm file.
                 xform_survey.to_csv(csv_tempfile.name)
                 # Import the XLSForm back in.
@@ -46,7 +46,7 @@ class ExportSpreadsheetTests(unittest.TestCase):
                 self.surveys[xform_in_p]['csv']= csv_survey
         
 
-    def consistent_export_test(self):
+    def test_consistent_export(self):
         '''
         Test that exporting a form to CSV and XLS result in the same data.
         '''
@@ -55,7 +55,7 @@ class ExportSpreadsheetTests(unittest.TestCase):
             self.assertEqual(srvys['xls'], srvys['csv'])
 
 
-    def unicode_test(self):
+    def test_unicode(self):
         '''
         Test that Unicode text is correctly exported and re-importable.
         '''
