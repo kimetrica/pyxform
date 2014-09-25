@@ -213,6 +213,9 @@ class XFormToDictBuilder:
             self.bindings= [self.bindings]
         self._bind_list = copy.deepcopy(self.bindings)
         self.title = doc_as_dict['html']['head']['title']
+        # FIXME: Brittle workaround for titles with translations that also provide default text (old KF).
+        if isinstance(self.title, dict):
+            self.title= self.title['_text']
         self.new_doc = {
             "type": "survey",
             "title": self.title,
@@ -328,13 +331,13 @@ class XFormToDictBuilder:
             if 'ref' not in question:
                 new_ref = u'/'.join(ref.split('/')[2:])
                 root_ref = u'/'.join(ref.split('/')[:2])
-                q = self._get_item_func(root_ref, new_ref, item)
-                if 'type' not in q and 'type' in question:
-                    q.update(question)
-                if q['type'] == 'group' and q['name'] == 'meta':
-                    q['control'] = {'bodyless': True}
-                    q['__order'] = self._get_question_order(ref)
-                self.children.append(q)
+                question_or_choice = self._get_item_func(root_ref, new_ref, item)
+                if 'type' not in question_or_choice and 'type' in question:
+                    question_or_choice.update(question)
+                if question_or_choice['type'] == 'group' and question_or_choice['name'] == 'meta':
+                    question_or_choice['control'] = {'bodyless': True}
+                    question_or_choice['__order'] = self._get_question_order(ref)
+                self.children.append(question_or_choice)
                 self._bind_list.append(item)
                 break
         if self._bind_list:
