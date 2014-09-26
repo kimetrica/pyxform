@@ -89,7 +89,7 @@ NOTE_XLSFORM= u'note'
 CALCULATE_XLSFORM= u'calculate'
 
 TRIGGER_XFORM= u'trigger' # Not a data type.
-TRIGGER_XLSFORM= u'acknowledge' # Currently undocumented as of 2014/09/24.
+TRIGGER_XLSFORM= u'acknowledge' # Currently undocumented in XLSForm standard (2014/09/25).
 
 XFORM_TYPES= {STRING_XFORM, INT_XFORM, BOOLEAN_XFORM, DECIMAL_XFORM, DATE_XFORM, \
   TIME_XFORM, DATETIME_XFORM, SELECT_ALL_THAT_APPLY_XFORM, SELECT_ONE_XFORM, \
