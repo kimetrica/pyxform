@@ -415,12 +415,13 @@ class XFormToDictBuilder:
             question['type'] = obj['mediatype'].replace('/*', '')
         if 'item' in obj:
             children = []
-            for i in obj['item']:
-                if isinstance(i, dict) and\
-                        'label' in i.keys() and 'value' in i.keys():
-                    k, v = self._get_label(i['label'])
+            item_list= [obj['item']] if isinstance(obj['item'], dict) else obj['item']
+            for itm in item_list:
+                if isinstance(itm, dict) and\
+                        'label' in itm.keys() and 'value' in itm.keys():
+                    k, v = self._get_label(itm['label'])
                     children.append(
-                        {'name': i['value'], k: v})
+                        {'name': itm['value'], k: v})
             question['children'] = children
         
         # Record the question type.
