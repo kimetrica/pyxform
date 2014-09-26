@@ -1,5 +1,5 @@
 from xls2json import QuestionTypesReader, print_pyobj_to_json
-from pyxform import constants
+from pyxform.constants import *
 
 def generate_new_dict():
     """
@@ -12,77 +12,77 @@ def generate_new_dict():
 
 
 _SELECT_1_TYPE_DICT= {
-    "control": {
-        "tag": constants.SELECT_ONE_XFORM
+    CONTROL: {
+        "tag": SELECT_ONE_XFORM
     }, 
-    "bind": {
-        "type": constants.SELECT_ONE_XFORM
+    BIND: {
+        TYPE: SELECT_ONE_XFORM
     }
 }
 
 _SELECT_TYPE_DICT= {
-    "control": {
-        "tag": constants.SELECT_ALL_THAT_APPLY_XFORM
+    CONTROL: {
+        "tag": SELECT_ALL_THAT_APPLY_XFORM
     }, 
-    "bind": {
-        "type": constants.SELECT_ALL_THAT_APPLY_XFORM
+    BIND: {
+        TYPE: SELECT_ALL_THAT_APPLY_XFORM
     }
 }
 
 _IMAGE_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "upload",
-        "mediatype": "image/*"
+        "mediatype": IMAGE_XLSFORM + "/*"
     }, 
-    "bind": {
-        "type": constants.BINARY_XFORM
+    BIND: {
+        TYPE: BINARY_XFORM
     }
 }
 
 _VIDEO_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "upload", 
-        "mediatype": "video/*"
+        "mediatype": VIDEO_XLSFORM + "/*"
     }, 
-    "bind": {
-        "type": constants.BINARY_XFORM
+    BIND: {
+        TYPE: BINARY_XFORM
     }
 }
 
 _AUDIO_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "upload", 
-        "mediatype": "audio/*"
+        "mediatype": AUDIO_XLSFORM + "/*"
     }, 
-    "bind": {
-        "type": constants.BINARY_XFORM
+    BIND: {
+        TYPE: BINARY_XFORM
     }
 }
 
 _DATE_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.DATE_XFORM
+    BIND: {
+        TYPE: DATE_XFORM
     }
 }
 
 _DATETIME_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.DATETIME_XFORM
+    BIND: {
+        TYPE: DATETIME_XFORM
     }
 }
 
 _GEOPOINT_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.GEOPOINT_XFORM
+    BIND: {
+        TYPE: GEOPOINT_XFORM
     }
 }
 
@@ -90,11 +90,11 @@ _GEOPOINT_TYPE_W_HINT= dict(_GEOPOINT_TYPE, \
     **{"hint": "GPS coordinates can only be collected when outside."})
 
 _GEOSHAPE_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.GEOSHAPE_XFORM
+    BIND: {
+        TYPE: GEOSHAPE_XFORM
     }
 }
 
@@ -102,11 +102,11 @@ _GEOSHAPE_TYPE_W_HINT= dict(_GEOSHAPE_TYPE, \
             **{"hint": "GPS coordinates can only be collected when outside."})
 
 _GEOTRACE_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.GEOTRACE_XFORM
+    BIND: {
+        TYPE: GEOTRACE_XFORM
     }
 }
 
@@ -114,143 +114,143 @@ _GEOTRACE_TYPE_W_HINT= dict(_GEOTRACE_TYPE, \
             **{"hint": "GPS coordinates can only be collected when outside."})
 
 _INT_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.INT_XFORM
+    BIND: {
+        TYPE: INT_XFORM
     }
 }
 
 _DECIMAL_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.DECIMAL_XFORM
+    BIND: {
+        TYPE: DECIMAL_XFORM
     }
 }
 
 _STRING_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.STRING_XFORM
+    BIND: {
+        TYPE: STRING_XFORM
     }
 }
 
 _NOTE_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
+    BIND: {
         "readonly": "true()", 
-        "type": constants.STRING_XFORM
+        TYPE: STRING_XFORM
     }
 }
 
 _TRIGGER_TYPE= {
-    "control": {
-        "tag": constants.TRIGGER_XFORM
+    CONTROL: {
+        "tag": TRIGGER_XFORM
     }, 
-    "bind": {
-        "type": constants.STRING_XFORM
+    BIND: {
+        TYPE: STRING_XFORM
     }
 }
 
 _BARCODE_TYPE= {
-    "control": {
+    CONTROL: {
         "tag": "input"
     }, 
-    "bind": {
-        "type": constants.BARCODE_XFORM
+    BIND: {
+        TYPE: BARCODE_XFORM
     }
 }
 
 _TODAY_TYPE= {
-    "bind": {
-        "jr:preload": constants.DATE_XFORM, 
-        "type": constants.DATE_XFORM, 
-        "jr:preloadParams": constants.TODAY_XLSFORM
+    BIND: {
+        "jr:preload": DATE_XFORM, 
+        TYPE: DATE_XFORM, 
+        "jr:preloadParams": TODAY_XLSFORM
     }
 }
 
 _NONINPUT_STING_TYPE= {
-    "bind": {
-        "type": constants.STRING_XFORM
+    BIND: {
+        TYPE: STRING_XFORM
     }
 }
 
 # XForm.
 _START_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "timestamp", 
-        "type": constants.DATETIME_XFORM, 
-        "jr:preloadParams": constants.START_XLSFORM
+        TYPE: DATETIME_XFORM, 
+        "jr:preloadParams": START_XLSFORM
     }
 }
 
 # XForm.
 _END_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "timestamp", 
-        "type": constants.DATETIME_XFORM, 
-        "jr:preloadParams": constants.END_XLSFORM
+        TYPE: DATETIME_XFORM, 
+        "jr:preloadParams": END_XLSFORM
     }
 }
 
 # XForm.
 _DEVICEID_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "property", 
-        "type": constants.STRING_XFORM, 
-        "jr:preloadParams": constants.DEVICEID_XLSFORM
+        TYPE: STRING_XFORM, 
+        "jr:preloadParams": DEVICEID_XLSFORM
     }
 }
 
 # XForm.
 _EMAIL_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "property", 
-        "type": constants.STRING_XFORM, 
+        TYPE: STRING_XFORM, 
         "jr:preloadParams": "email"
     }
 }
 
 # XForm.
 _USERNAME_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "property", 
-        "type": constants.STRING_XFORM, 
+        TYPE: STRING_XFORM, 
         "jr:preloadParams": "username"
     }
 }
 
 # XForm.
 _PHONENUMBER_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "property", 
-        "type": constants.STRING_XFORM, 
-        "jr:preloadParams": constants.PHONENUMBER_XLSFORM
+        TYPE: STRING_XFORM, 
+        "jr:preloadParams": PHONENUMBER_XLSFORM
     }
 }
 
 # XForm.
 _SIMSERIAL_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "property", 
-        "type": constants.STRING_XFORM, 
-        "jr:preloadParams": constants.SIMSERIAL_XLSFORM
+        TYPE: STRING_XFORM, 
+        "jr:preloadParams": SIMSERIAL_XLSFORM
     }
 }
 
 # XForm.
 _SUBSCRIBERID_TYPE= {
-    "bind": {
+    BIND: {
         "jr:preload": "property", 
-        "type": constants.STRING_XFORM, 
-        "jr:preloadParams": constants.SUBSCRIBERID_XLSFORM
+        TYPE: STRING_XFORM, 
+        "jr:preloadParams": SUBSCRIBERID_XLSFORM
     }
 }
 
@@ -258,120 +258,120 @@ QUESTION_TYPE_DICT = \
 {
     # FIXME: These seemingly could be condensed to one entry per question type if 'pyxform.aliases.select' were put to use.
     # Select one.
-    constants.SELECT_ONE:                               _SELECT_1_TYPE_DICT,
-    "add " + constants.SELECT_ONE + " prompt using":    _SELECT_1_TYPE_DICT, # Already in 'pyxform.aliases.select'.
-    constants.SELECT_ONE + " using":                    _SELECT_1_TYPE_DICT,
-    "q " + constants.SELECT_ONE_XFORM:                  _SELECT_1_TYPE_DICT,
+    SELECT_ONE:                               _SELECT_1_TYPE_DICT,
+    "add " + SELECT_ONE + " prompt using":    _SELECT_1_TYPE_DICT, # Already in 'pyxform.aliases.select'.
+    SELECT_ONE + " using":                    _SELECT_1_TYPE_DICT,
+    "q " + SELECT_ONE_XFORM:                  _SELECT_1_TYPE_DICT,
     
     # Select multiple.
-    constants.SELECT_ALL_THAT_APPLY:                _SELECT_TYPE_DICT,  # Already in 'pyxform.aliases.select'.
-    constants.SELECT_ALL_THAT_APPLY + " from":      _SELECT_TYPE_DICT, # Already in 'pyxform.aliases.select'.
+    SELECT_ALL_THAT_APPLY:                _SELECT_TYPE_DICT,  # Already in 'pyxform.aliases.select'.
+    SELECT_ALL_THAT_APPLY + " from":      _SELECT_TYPE_DICT, # Already in 'pyxform.aliases.select'.
     "add select multiple prompt using":             _SELECT_TYPE_DICT, # Already in 'pyxform.aliases.select'.
     "select multiple from":                         _SELECT_TYPE_DICT,
-    "q " + constants.SELECT_ALL_THAT_APPLY_XFORM:   _SELECT_TYPE_DICT,
+    "q " + SELECT_ALL_THAT_APPLY_XFORM:   _SELECT_TYPE_DICT,
     "select multiple using":                        _SELECT_TYPE_DICT,
     
     "q picture":                                    _IMAGE_TYPE,
     "photo":                                        _IMAGE_TYPE,
-    "q " + constants.IMAGE_XLSFORM:                 _IMAGE_TYPE,
-    "add " + constants.IMAGE_XLSFORM + " prompt":   _IMAGE_TYPE,
-    constants.IMAGE_XLSFORM:                        _IMAGE_TYPE,
+    "q " + IMAGE_XLSFORM:                 _IMAGE_TYPE,
+    "add " + IMAGE_XLSFORM + " prompt":   _IMAGE_TYPE,
+    IMAGE_XLSFORM:                        _IMAGE_TYPE,
     
     "add date time prompt":     _DATETIME_TYPE,
     "q date time":              _DATETIME_TYPE,
     
-    constants.VIDEO_XLSFORM:                        _VIDEO_TYPE,
-    "add " + constants.VIDEO_XLSFORM + " prompt":   _VIDEO_TYPE,
-    "q " + constants.VIDEO_XLSFORM:                 _VIDEO_TYPE,
+    VIDEO_XLSFORM:                        _VIDEO_TYPE,
+    "add " + VIDEO_XLSFORM + " prompt":   _VIDEO_TYPE,
+    "q " + VIDEO_XLSFORM:                 _VIDEO_TYPE,
     
-    "add " + constants.AUDIO_XLSFORM + " prompt":   _AUDIO_TYPE,
-    "q " + constants.AUDIO_XLSFORM:                 _AUDIO_TYPE,
-    constants.AUDIO_XLSFORM:                        _AUDIO_TYPE,
+    "add " + AUDIO_XLSFORM + " prompt":   _AUDIO_TYPE,
+    "q " + AUDIO_XLSFORM:                 _AUDIO_TYPE,
+    AUDIO_XLSFORM:                        _AUDIO_TYPE,
     
-    "add " + constants.DATE_XFORM + " prompt":  _DATE_TYPE,
-    "q " + constants.DATE_XFORM:                _DATE_TYPE,
-    constants.DATE_XFORM:                       _DATE_TYPE,
+    "add " + DATE_XFORM + " prompt":  _DATE_TYPE,
+    "q " + DATE_XFORM:                _DATE_TYPE,
+    DATE_XFORM:                       _DATE_TYPE,
     
     "datetime":                                     _DATETIME_TYPE, 
-    constants.DATETIME_XFORM:                       _DATETIME_TYPE, 
-    "add " + constants.DATETIME_XFORM + " prompt":  _DATETIME_TYPE, 
-    "q " + constants.DATETIME_XFORM:                _DATETIME_TYPE, 
+    DATETIME_XFORM:                       _DATETIME_TYPE, 
+    "add " + DATETIME_XFORM + " prompt":  _DATETIME_TYPE, 
+    "q " + DATETIME_XFORM:                _DATETIME_TYPE, 
     "date time":                                    _DATETIME_TYPE, 
     
-    "q " + constants.GEOPOINT_XFORM:    _GEOPOINT_TYPE,
+    "q " + GEOPOINT_XFORM:    _GEOPOINT_TYPE,
     "location":                         _GEOPOINT_TYPE,
     "q location":                       _GEOPOINT_TYPE,
     "add location prompt":              _GEOPOINT_TYPE,
     
-    constants.GEOPOINT_XFORM:   _GEOPOINT_TYPE_W_HINT,
+    GEOPOINT_XFORM:   _GEOPOINT_TYPE_W_HINT,
     "gps":                      _GEOPOINT_TYPE_W_HINT,
     
-    "q " + constants.GEOTRACE_XFORM:    _GEOTRACE_TYPE,
+    "q " + GEOTRACE_XFORM:    _GEOTRACE_TYPE,
     
-    constants.GEOTRACE_XFORM:     _GEOTRACE_TYPE_W_HINT,
+    GEOTRACE_XFORM:     _GEOTRACE_TYPE_W_HINT,
     
-    "q " + constants.GEOSHAPE_XFORM:    _GEOSHAPE_TYPE,
+    "q " + GEOSHAPE_XFORM:    _GEOSHAPE_TYPE,
     
-    constants.GEOSHAPE_XFORM:   _GEOSHAPE_TYPE_W_HINT,
+    GEOSHAPE_XFORM:   _GEOSHAPE_TYPE_W_HINT,
 
-    constants.INT_XLSFORM:                      _INT_TYPE,
-    "q " + constants.INT_XFORM:                 _INT_TYPE,
-    constants.INT_XFORM:                        _INT_TYPE,
-    "add " + constants.INT_XLSFORM + " prompt": _INT_TYPE,
+    INT_XLSFORM:                      _INT_TYPE,
+    "q " + INT_XFORM:                 _INT_TYPE,
+    INT_XFORM:                        _INT_TYPE,
+    "add " + INT_XLSFORM + " prompt": _INT_TYPE,
     
-    constants.DECIMAL_XFORM:                        _DECIMAL_TYPE,
-    "add " + constants.DECIMAL_XFORM + " prompt":   _DECIMAL_TYPE,
-    "q " + constants.DECIMAL_XFORM:                 _DECIMAL_TYPE,
+    DECIMAL_XFORM:                        _DECIMAL_TYPE,
+    "add " + DECIMAL_XFORM + " prompt":   _DECIMAL_TYPE,
+    "q " + DECIMAL_XFORM:                 _DECIMAL_TYPE,
     
-    constants.STRING_XLSFORM:                       _STRING_TYPE,
-    constants.STRING_XFORM:                         _STRING_TYPE,
-    "q " + constants.STRING_XFORM:                  _STRING_TYPE,
+    STRING_XLSFORM:                       _STRING_TYPE,
+    STRING_XFORM:                         _STRING_TYPE,
+    "q " + STRING_XFORM:                  _STRING_TYPE,
     "select one external":                          _STRING_TYPE,
-    "add " + constants.STRING_XLSFORM + " prompt":  _STRING_TYPE,
+    "add " + STRING_XLSFORM + " prompt":  _STRING_TYPE,
     
-    "add " + constants.NOTE_XLSFORM + " prompt":    _NOTE_TYPE,
-    "q " + constants.NOTE_XLSFORM:                  _NOTE_TYPE,
-    constants.NOTE_XLSFORM:                         _NOTE_TYPE,
+    "add " + NOTE_XLSFORM + " prompt":    _NOTE_TYPE,
+    "q " + NOTE_XLSFORM:                  _NOTE_TYPE,
+    NOTE_XLSFORM:                         _NOTE_TYPE,
 
-    "add " + constants.TRIGGER_XLSFORM + " prompt": _TRIGGER_TYPE,
-    constants.TRIGGER_XLSFORM:                      _TRIGGER_TYPE,
-    "q " + constants.TRIGGER_XLSFORM:               _TRIGGER_TYPE,
+    "add " + TRIGGER_XLSFORM + " prompt": _TRIGGER_TYPE,
+    TRIGGER_XLSFORM:                      _TRIGGER_TYPE,
+    "q " + TRIGGER_XLSFORM:               _TRIGGER_TYPE,
     
-    "add " + constants.BARCODE_XFORM + " prompt":   _BARCODE_TYPE,
-    "q " + constants.BARCODE_XFORM:                 _BARCODE_TYPE,
-    constants.BARCODE_XFORM:                        _BARCODE_TYPE,
+    "add " + BARCODE_XFORM + " prompt":   _BARCODE_TYPE,
+    "q " + BARCODE_XFORM:                 _BARCODE_TYPE,
+    BARCODE_XFORM:                        _BARCODE_TYPE,
 
-    constants.PHONENUMBER_XLSFORM:  _PHONENUMBER_TYPE,
+    PHONENUMBER_XLSFORM:  _PHONENUMBER_TYPE,
     "get phone number":             _PHONENUMBER_TYPE,
     
-    constants.START_XLSFORM:    _START_TYPE,
+    START_XLSFORM:    _START_TYPE,
     "get start time":           _START_TYPE,
     
     "get end time":         _END_TYPE,
     "end time":             _END_TYPE,
-    constants.END_XLSFORM:  _END_TYPE,
+    END_XLSFORM:  _END_TYPE,
     
     "get sim id":                   _SIMSERIAL_TYPE,
-    constants.SIMSERIAL_XLSFORM:    _SIMSERIAL_TYPE,
+    SIMSERIAL_XLSFORM:    _SIMSERIAL_TYPE,
     "sim id":                       _SIMSERIAL_TYPE,
     
     "imei":                     _DEVICEID_TYPE,
     "device id":                _DEVICEID_TYPE,
     "get device id":            _DEVICEID_TYPE,
-    constants.DEVICEID_XLSFORM: _DEVICEID_TYPE,
+    DEVICEID_XLSFORM: _DEVICEID_TYPE,
 
     "subscriber id":                _SUBSCRIBERID_TYPE,
-    constants.SUBSCRIBERID_XLSFORM: _SUBSCRIBERID_TYPE,
+    SUBSCRIBERID_XLSFORM: _SUBSCRIBERID_TYPE,
     "get subscriber id":            _SUBSCRIBERID_TYPE,
     
     "get today":                _TODAY_TYPE,
-    constants.TODAY_XLSFORM:    _TODAY_TYPE,
+    TODAY_XLSFORM:    _TODAY_TYPE,
     
     "start time":   _START_TYPE,
     
-    constants.CALCULATE_XLSFORM:                        _NONINPUT_STING_TYPE,
-    "q " + constants.CALCULATE_XLSFORM:                 _NONINPUT_STING_TYPE,
-    "add " + constants.CALCULATE_XLSFORM + " prompt":   _NONINPUT_STING_TYPE, 
+    CALCULATE_XLSFORM:                        _NONINPUT_STING_TYPE,
+    "q " + CALCULATE_XLSFORM:                 _NONINPUT_STING_TYPE,
+    "add " + CALCULATE_XLSFORM + " prompt":   _NONINPUT_STING_TYPE, 
     "hidden":                                           _NONINPUT_STING_TYPE,
     
     "username": _USERNAME_TYPE, 
@@ -379,106 +379,106 @@ QUESTION_TYPE_DICT = \
     "email": _EMAIL_TYPE,
     
     "number of days in last month": {
-        "control": {
+        CONTROL: {
             "tag": "input"
         }, 
-        "bind": {
-            "type": constants.INT_XFORM, 
+        BIND: {
+            TYPE: INT_XFORM, 
             "constraint": "0 <= . and . <= 31"
         }, 
         "hint": "Enter a number 0-31."
     }, 
-    constants.TRIGGER_XFORM: {
-        "control": {
-            "tag": constants.TRIGGER_XFORM
+    TRIGGER_XFORM: {
+        CONTROL: {
+            "tag": TRIGGER_XFORM
         }
     }, 
     "percentage": {
-        "control": {
+        CONTROL: {
             "tag": "input"
         }, 
-        "bind": {
-            "type": constants.INT_XFORM, 
+        BIND: {
+            TYPE: INT_XFORM, 
             "constraint": "0 <= . and . <= 100"
         }
     }, 
     "number of days in last six months": {
-        "control": {
+        CONTROL: {
             "tag": "input"
         }, 
-        "bind": {
-            "type": constants.INT_XFORM, 
+        BIND: {
+            TYPE: INT_XFORM, 
             "constraint": "0 <= . and . <= 183"
         }, 
         "hint": "Enter a number 0-183."
     }, 
     "phone number": {
-        "control": {
+        CONTROL: {
             "tag": "input"
         }, 
-        "bind": {
-            "type": constants.STRING_XFORM, 
+        BIND: {
+            TYPE: STRING_XFORM, 
             "constraint": "regex(., '^\\d*$')"
         }, 
         "hint": "Enter numbers only."
     }, 
     "number of days in last year": {
-        "control": {
+        CONTROL: {
             "tag": "input"
         }, 
-        "bind": {
-            "type": constants.INT_XFORM, 
+        BIND: {
+            TYPE: INT_XFORM, 
             "constraint": "0 <= . and . <= 365"
         }, 
         "hint": "Enter a number 0-365."
     }, 
-    constants.TIME_XFORM: {
-        "control": {
+    TIME_XFORM: {
+        CONTROL: {
             "tag": "input"
         }, 
-        "bind": {
-            "type": constants.TIME_XFORM
+        BIND: {
+            TYPE: TIME_XFORM
         }
     }, 
-    "uri:" + constants.SUBSCRIBERID_XLSFORM: {
-        "bind": {
+    "uri:" + SUBSCRIBERID_XLSFORM: {
+        BIND: {
             "jr:preload": "property", 
-            "type": constants.STRING_XFORM, 
-            "jr:preloadParams": "uri:" + constants.SUBSCRIBERID_XLSFORM
+            TYPE: STRING_XFORM, 
+            "jr:preloadParams": "uri:" + SUBSCRIBERID_XLSFORM
         }
     },
-    "uri:" + constants.PHONENUMBER_XLSFORM: {
-        "bind": {
+    "uri:" + PHONENUMBER_XLSFORM: {
+        BIND: {
             "jr:preload": "property", 
-            "type": constants.STRING_XFORM, 
-            "jr:preloadParams": "uri:" + constants.PHONENUMBER_XLSFORM
+            TYPE: STRING_XFORM, 
+            "jr:preloadParams": "uri:" + PHONENUMBER_XLSFORM
         }
     },
-    "uri:" + constants.SIMSERIAL_XLSFORM: {
-        "bind": {
+    "uri:" + SIMSERIAL_XLSFORM: {
+        BIND: {
             "jr:preload": "property", 
-            "type": constants.STRING_XFORM, 
-            "jr:preloadParams": "uri:" + constants.SIMSERIAL_XLSFORM
+            TYPE: STRING_XFORM, 
+            "jr:preloadParams": "uri:" + SIMSERIAL_XLSFORM
         }
     },
-    "uri:" + constants.DEVICEID_XLSFORM: {
-        "bind": {
+    "uri:" + DEVICEID_XLSFORM: {
+        BIND: {
             "jr:preload": "property", 
-            "type": constants.STRING_XFORM, 
-            "jr:preloadParams": "uri:" + constants.DEVICEID_XLSFORM
+            TYPE: STRING_XFORM, 
+            "jr:preloadParams": "uri:" + DEVICEID_XLSFORM
         }
     }, 
     "uri:username": {
-        "bind": {
+        BIND: {
             "jr:preload": "property", 
-            "type": constants.STRING_XFORM, 
+            TYPE: STRING_XFORM, 
             "jr:preloadParams": "uri:username"
         }
     }, 
     "uri:email": {
-        "bind": {
+        BIND: {
             "jr:preload": "property",
-            "type": constants.STRING_XFORM, 
+            TYPE: STRING_XFORM, 
             "jr:preloadParams": "uri:email"
         }
     },
