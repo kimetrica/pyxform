@@ -5,7 +5,6 @@ By putting them in a shared file, the literal names can be easily changed, typos
 """
 #TODO: Replace matching strings in the json2xforms code (builder.py, survey.py, survey_element.py, question.py) with these constants
 
-TYPE = u"type"
 TITLE = u"title"
 NAME = u"name"
 ID_STRING = u"id_string"
@@ -21,8 +20,6 @@ VERSION = u"version"
 PUBLIC_KEY = u"public_key"
 SUBMISSION_URL = u"submission_url"
 DEFAULT_LANGUAGE = u"default_language"
-LABEL = u"label"
-HINT = u"hint"
 STYLE = u"style"
 
 BIND = u"bind"#TODO: What should I do with the nested types? (readonly and relevant)
@@ -33,13 +30,31 @@ APPEARANCE = u"appearance"
 LOOP = u"loop"
 COLUMNS = u"columns"
 
-REPEAT = u"repeat"
-GROUP = u"group"
 CHILDREN = u"children"
 
+META_XFORM= u'meta'
+
+
+# XFrom bind attributes: http://opendatakit.github.io/odk-xform-spec/#bind-attributes.
+NODESET_XFORM= u'nodeset'
+TYPE = u"type"
+READONLY_XFORM= u'readonly'
+REQUIRED_XFORM= u'required'
+RELEVANT_XFORM= u'relevant'
+CALCULATE_XFORM= u'calculate'
+CONSTRAINT_XFORM= u'constraint'
+CONSTRAINT_MSG_XFORM= u'jr:constraintMsg'
+PRELOAD_XFORM= u'jr:preload'
+PRELOAD_PARAMS_XFORM= u'jr:preloadParams'
+
+BIND_ATTRIBUTES_XFORM= {NODESET_XFORM, TYPE, READONLY_XFORM, REQUIRED_XFORM, \
+  RELEVANT_XFORM, CALCULATE_XFORM, CONSTRAINT_XFORM, CONSTRAINT_MSG_XFORM, \
+  PRELOAD_XFORM, PRELOAD_PARAMS_XFORM}
+
+
 # Question/data types.
-# XForm: http://opendatakit.github.io/odk-xform-spec/#data-types.
-# XLSForm: http://xlsform.org/#question%20types.
+# ODK XForm data types: http://opendatakit.github.io/odk-xform-spec/#data-types.
+# XLSForm question types: http://xlsform.org/#question%20types.
 STRING_XFORM= u'string'
 STRING_XLSFORM= u'text'
 
@@ -86,9 +101,8 @@ BARCODE_XLSFORM= BARCODE_XFORM
 
 NOTE_XLSFORM= u'note'
 
-CALCULATE_XLSFORM= u'calculate'
+CALCULATE_XLSFORM= CALCULATE_XFORM
 
-TRIGGER_XFORM= u'trigger' # Not a data type.
 TRIGGER_XLSFORM= u'acknowledge' # Currently undocumented in XLSForm standard (2014/09/25).
 
 XFORM_TYPES= {STRING_XFORM, INT_XFORM, BOOLEAN_XFORM, DECIMAL_XFORM, DATE_XFORM, \
@@ -130,11 +144,32 @@ XLSFORM_METADATA_TYPES= {START_XLSFORM, END_XLSFORM, TODAY_XLSFORM, \
 
 #XLSFORM_TO_XLS_TYPES= {xlsform: xform for xform, xlsform in XFORM_TO_XLSFORM_TYPES.iteritems()}
 
+
+# XForm body elements: http://opendatakit.github.io/odk-xform-spec/#body-elements
+INPUT_XFORM= u'input'
+UPLOAD_XFORM= u'upload'
+TRIGGER_XFORM= u'trigger'
+GROUP = u"group"
+REPEAT = u"repeat"
+
+XFORM_BODY_ELEMENTS= {INPUT_XFORM, SELECT_ONE_XFORM, SELECT_ALL_THAT_APPLY_XFORM, \
+  UPLOAD_XFORM, TRIGGER_XFORM, GROUP, REPEAT}
+
+
+# XForm body sub-elements: http://opendatakit.github.io/odk-xform-spec/#body-elements
+HINT = u"hint"
+LABEL = u"label"
+OUTOPUT_XFORM= u'output'
+ITEM_XFORM= u'item'
+ITEMSET_XFORM= u'itemset'
+VALUE_XFORM= u'value'
+
+
+
 # XLS Specific constants
 LIST_NAME = u"list name"
 CASCADING_SELECT = u"cascading_select"
 TABLE_LIST = u"table-list" # hyphenated because it goes in appearance, and convention for appearance column is dashes
-
 # The following are the possible sheet names:
 SURVEY = u"survey"
 SETTINGS = u"settings"
