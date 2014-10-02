@@ -231,7 +231,7 @@ def add_flat_annotations(prompt_list, parent_relevant = '', name_prefix = ''):
         if children:
             prompt['flat'] = True
             add_flat_annotations(children, new_relevant,
-                                 name_prefix + '_' + prompt['name'])
+                                 name_prefix + '_' + prompt[constants.NAME])
         else:
             if new_relevant != '':
                 prompt[constants.BIND] = prompt.get(constants.BIND, {})
@@ -277,7 +277,7 @@ def workbook_to_json(
         choices_headers = workbook_dict.get(choices_header_sheet)
         if not choices_headers:
             raise PyXFormError(u"The choices sheet is missing column headers.")
-        choices_header_list = [u'list name', u'list_name', u'name']
+        choices_header_list = [u'list name', u'list_name', constants.NAME]
         tmp = [
             h for h in choices_header_list if h in choices_headers[0].keys()]
         if tmp.__len__() is not 2:
@@ -374,7 +374,7 @@ def workbook_to_json(
     warnedabout = set()
     for list_name, options in choices.items():
         for option in options:
-            if 'name' not in option:
+            if constants.NAME not in option:
                 info = "[list_name : " + list_name + ']'
                 raise PyXFormError("On the choices sheet there is "
                                    "a option with no name. " + info)
@@ -510,7 +510,7 @@ def workbook_to_json(
         if not constants.NAME in row:
             if row[constants.TYPE] == 'note':
                 #autogenerate names for notes without them
-                row['name'] = "generated_note_name_" + str(row_number)
+                row[constants.NAME] = "generated_note_name_" + str(row_number)
             # elif 'group' in row[constants.TYPE].lower():
             #     # autogenerate names for groups without them
             #     row['name'] = "generated_group_name_" + str(row_number)
@@ -572,7 +572,7 @@ def workbook_to_json(
                 repeat_count_expression = new_json_dict.get(
                     constants.CONTROL, {}).get('jr:count')
                 if repeat_count_expression:
-                    generated_node_name = new_json_dict['name'] + "_count"
+                    generated_node_name = new_json_dict[constants.NAME] + "_count"
                     parent_children_array.append({
                         constants.NAME: generated_node_name,
                         constants.BIND: {
@@ -728,8 +728,8 @@ def workbook_to_json(
                     if select_type == 'select one external':
                         new_json_dict['query'] = list_name
                     else:
-                        new_json_dict['itemset'] = list_name
-                        json_dict['choices'] = choices
+                        new_json_dict[constants.ITEMSET_XFORM] = list_name
+                        json_dict[constants.CHOICES] = choices
                 else:
                     new_json_dict[constants.CHOICES] = choices[list_name]
 
@@ -782,7 +782,7 @@ def workbook_to_json(
     meta_children = []
 
     if aliases.yes_no.get(settings.get("omit_instanceID")):
-        if settings.get("public_key"):
+        if settings.get(constants.PUBLIC_KEY):
             raise PyXFormError(
                 "Cannot omit instanceID, it is required for encryption.")
     else:

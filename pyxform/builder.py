@@ -81,7 +81,7 @@ class SurveyElementBuilder(object):
         elif element_dict[u"type"] == u"loop":
             return self._create_loop_from_dict(element_dict)
         elif element_dict[u"type"] == u"include":
-            section_name = element_dict[u"name"]
+            section_name = element_dict[constants.NAME]
             if section_name not in self._sections:
                 raise PyXFormError("This section has not been included.",
                                 section_name, self._sections.keys())
@@ -130,7 +130,7 @@ class SurveyElementBuilder(object):
         if len(choice_list) <= 0:
             raise PyXFormError("There should be choices for this question.")
         other_choice = {
-            u"name": u"other",
+            constants.NAME: u"other",
             u"label": u"Other",
             }
         if other_choice not in choice_list:
@@ -142,18 +142,18 @@ class SurveyElementBuilder(object):
         if len(choice_list) <= 0:
             raise PyXFormError("There should be choices for this question.")
         none_choice = {
-            u"name": u"none",
+            constants.NAME: u"none",
             u"label": u"None",
             }
         if none_choice not in choice_list:
             choice_list.append(none_choice)
             none_constraint = u"(.='none' or not(selected(., 'none')))"
-            if u"bind" not in question_dict_copy:
-                question_dict_copy[u"bind"] = {}
-            if u"constraint" in question_dict_copy[u"bind"]:
-                question_dict_copy[u"bind"][u"constraint"] += " and " + none_constraint
+            if constants.BIND not in question_dict_copy:
+                question_dict_copy[constants.BIND] = {}
+            if u"constraint" in question_dict_copy[constants.BIND]:
+                question_dict_copy[constants.BIND][u"constraint"] += " and " + none_constraint
             else:
-                question_dict_copy[u"bind"][u"constraint"] = none_constraint
+                question_dict_copy[constants.BIND][u"constraint"] = none_constraint
 
     @staticmethod
     def _get_question_class(question_type_str, question_type_dictionary):
@@ -177,9 +177,9 @@ class SurveyElementBuilder(object):
     def _create_specify_other_question_from_dict(d):
         kwargs = {
             u"type": u"text",
-            u"name": u"%s_other" % d[u"name"],
+            constants.NAME: u"%s_other" % d[constants.NAME],
             u"label": u"Specify other.",
-            u"bind": {u"relevant": u"selected(../%s, 'other')" % d[u"name"]},
+            constants.BIND: {u"relevant": u"selected(../%s, 'other')" % d[constants.NAME]},
             }
         return InputQuestion(**kwargs)
 
@@ -187,8 +187,8 @@ class SurveyElementBuilder(object):
         section_dict_copy = section_dict.copy()
         children = section_dict_copy.pop(u"children", [])
         section_class = self.SECTION_CLASSES[section_dict_copy[u"type"]]
-        if section_dict[u'type'] == u'survey' and u'title' not in section_dict:
-            section_dict_copy[u'title'] = section_dict[u'name']
+        if section_dict[u'type'] == u'survey' and constants.TITLE not in section_dict:
+            section_dict_copy[constants.TITLE] = section_dict[constants.NAME]
         result = section_class(**section_dict_copy)
         for child in children:
             #Deep copying the child is a hacky solution to the or_other bug.
@@ -215,7 +215,7 @@ class SurveyElementBuilder(object):
         for column_dict in columns:
             # If this is a none option for a select all that apply
             # question then we should skip adding it to the result
-            if column_dict[u"name"] == "none": continue
+            if column_dict[constants.NAME] == "none": continue
 
             column = GroupedSection(**column_dict)
             for child in children:
@@ -232,7 +232,7 @@ class SurveyElementBuilder(object):
         # dictionary by language to do substitutions.
         if type(column_headers[u"label"]) == dict:
             info_by_lang = dict(
-                [(lang, {u"name": column_headers[u"name"], u"label": column_headers[u"label"][lang]}) for lang in column_headers[u"label"].keys()]
+                [(lang, {constants.NAME: column_headers[constants.NAME], u"label": column_headers[u"label"][lang]}) for lang in column_headers[u"label"].keys()]
                 )
 
         result = question_template.copy()
@@ -296,8 +296,8 @@ def create_survey(
     builder.set_sections(sections)
 
     #assert name_of_main_section in sections, name_of_main_section
-    if u"id_string" not in main_section:
-        main_section[u"id_string"] = name_of_main_section if id_string is None else name_of_main_section
+    if constants.ID_STRING not in main_section:
+        main_section[constants.ID_STRING] = name_of_main_section if id_string is None else name_of_main_section
     survey = builder.create_survey_element_from_dict(main_section)
     
     # not sure where to do this without repeating ourselves, but it's needed to pass

@@ -2,6 +2,7 @@ from utils import node
 from survey_element import SurveyElement
 from question_type_dictionary import QUESTION_TYPE_DICT
 from errors import PyXFormError
+from pyxform import constants
 
 
 class Question(SurveyElement):
@@ -184,7 +185,7 @@ class MultipleChoiceQuestion(Question):
             if choice_filter:
                 nodeset += '[' + choice_filter + ']'
             itemset_label_ref = "jr:itext(itextId)"
-            itemset_children = [node('value', ref='name'), node('label', ref=itemset_label_ref)]
+            itemset_children = [node('value', ref=constants.NAME), node('label', ref=itemset_label_ref)]
             result.appendChild(node('itemset', *itemset_children, nodeset=nodeset))
         else:
             for n in [o.xml() for o in self.children]:

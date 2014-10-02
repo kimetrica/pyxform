@@ -9,7 +9,7 @@ from lxml import etree
 from lxml.etree import ElementTree
 
 import pyxform.aliases
-import pyxform.constants
+from pyxform import constants
 from pyxform import builder
 
 
@@ -188,8 +188,8 @@ def create_survey_element_from_xml(xml_file):
 class XFormToDictBuilder:
     '''Experimental XFORM xml to XFORM JSON'''
     QUESTION_TYPES = {
-        pyxform.constants.SELECT_ALL_THAT_APPLY_XFORM: pyxform.constants.SELECT_ALL_THAT_APPLY,
-        pyxform.constants.SELECT_ONE_XFORM: pyxform.constants.SELECT_ONE,
+        constants.SELECT_ALL_THAT_APPLY_XFORM: constants.SELECT_ALL_THAT_APPLY,
+        constants.SELECT_ONE_XFORM: constants.SELECT_ONE,
         'int': 'integer',
         'dateTime': 'datetime',
         'string': 'text'
@@ -202,27 +202,27 @@ class XFormToDictBuilder:
         assert 'html' in doc_as_dict
         assert 'body' in doc_as_dict['html']
         assert 'head' in doc_as_dict['html']
-        assert 'model' in doc_as_dict['html']['head']
-        assert 'title' in doc_as_dict['html']['head']
-        assert 'bind' in doc_as_dict['html']['head']['model']
+        assert constants.MODEL_XFORM in doc_as_dict['html']['head']
+        assert constants.TITLE in doc_as_dict['html']['head']
+        assert constants.BIND in doc_as_dict['html']['head'][constants.MODEL_XFORM]
 
         self.body = doc_as_dict['html']['body']
-        self.model = doc_as_dict['html']['head']['model']
-        self.bindings = copy.deepcopy(self.model['bind'])
+        self.model = doc_as_dict['html']['head'][constants.MODEL_XFORM]
+        self.bindings = copy.deepcopy(self.model[constants.BIND])
         if isinstance(self.bindings, dict):
             self.bindings= [self.bindings]
         self._bind_list = copy.deepcopy(self.bindings)
-        self.title = doc_as_dict['html']['head']['title']
+        self.title = doc_as_dict['html']['head'][constants.TITLE]
         # FIXME: Brittle workaround for titles with translations that also provide default text (old KF).
         if isinstance(self.title, dict):
             self.title= self.title['_text']
         self.new_doc = {
-            "type": "survey",
-            "title": self.title,
-            "children": [],
-            "id_string": self.title,
-            "sms_keyword": self.title,
-            "default_language": "default",
+            constants.TYPE: constants.SURVEY,
+            constants.TITLE: self.title,
+            constants.CHILDREN: [],
+            constants.ID_STRING: self.title,
+            constants.SMS_KEYWORD: self.title,
+            constants.DEFAULT_LANGUAGE: "default",
         }
         self._set_submission_info()
         self._set_survey_name()
@@ -245,49 +245,49 @@ class XFormToDictBuilder:
                                 element_tag=body_element_tag))
         self._cleanup_bind_list()
         self._cleanup_children()
-        self.new_doc['children'] = self.children
+        self.new_doc[constants.CHILDREN] = self.children
 
     def _set_binding_order(self):
         self.ordered_binding_refs = []
         for bind in self.bindings:
-            self.ordered_binding_refs.append(bind['nodeset'])
+            self.ordered_binding_refs.append(bind[constants.NODESET_XFORM])
 
     def _set_survey_name(self):
         obj = self.bindings[0]
-        name = obj['nodeset'].split('/')[1]
-        self.new_doc['name'] = name
+        name = obj[constants.NODESET_XFORM].split('/')[1]
+        self.new_doc[constants.NAME] = name
         
         # If there are multiple 'instance' elements, get the primary.
-        if not isinstance(self.model['instance'], dict):
-            for i in self.model['instance']:
+        if not isinstance(self.model[constants.INSTANCE_XFORM], dict):
+            for i in self.model[constants.INSTANCE_XFORM]:
                 # See http://opendatakit.github.io/odk-xform-spec/#primary-instance.
                 # TODO: Check child for 'id' attribute too?
                 if len(i) == 1:
                     primary_instance= i
         else:
-            primary_instance= self.model['instance']
-        self.new_doc['id_string'] = primary_instance[name]['id']
+            primary_instance= self.model[constants.INSTANCE_XFORM]
+        self.new_doc[constants.ID_STRING] = primary_instance[name]['id']
 
     def _set_submission_info(self):
         if 'submission' in self.model:
             submission = self.model['submission']
             if 'action' in submission:
-                self.new_doc['submission_url'] = submission['action']
+                self.new_doc[constants.SUBMISSION_URL] = submission['action']
             if 'base64RsaPublicKey' in submission:
-                self.new_doc['public_key'] = submission['base64RsaPublicKey']
+                self.new_doc[constants.PUBLIC_KEY] = submission['base64RsaPublicKey']
 
     def _cleanup_children(self):
         def remove_refs(children):
             for child in children:
                 if isinstance(child, dict):
-                    if 'nodeset' in child:
-                        del child['nodeset']
-                    if 'ref' in child:
-                        del child['ref']
+                    if constants.NODESET_XFORM in child:
+                        del child[constants.NODESET_XFORM]
+                    if constants.REF_XFORM in child:
+                        del child[constants.REF_XFORM]
                     if '__order' in child:
                         del child['__order']
-                    if 'children' in child:
-                        remove_refs(child['children'])
+                    if constants.CHILDREN in child:
+                        remove_refs(child[constants.CHILDREN])
 
         # do some ordering, order is specified by bindings
         def order_children(children):
@@ -308,7 +308,7 @@ class XFormToDictBuilder:
             name = self._get_name_from_ref(ref)
             parent_ref = ref[:ref.find('/%s' % name)]
             question = self._get_question_params_from_bindings(ref)
-            question['name'] = name
+            question[constants.NAME] = name
             question['__order'] = self._get_question_order(ref)
             if 'calculate' in item:
                 question['type'] = 'calculate'
@@ -334,7 +334,7 @@ class XFormToDictBuilder:
                 question_or_choice = self._get_item_func(root_ref, new_ref, item)
                 if 'type' not in question_or_choice and 'type' in question:
                     question_or_choice.update(question)
-                if question_or_choice['type'] == 'group' and question_or_choice['name'] == 'meta':
+                if question_or_choice['type'] == 'group' and question_or_choice[constants.NAME] == 'meta':
                     question_or_choice['control'] = {'bodyless': True}
                     question_or_choice['__order'] = self._get_question_order(ref)
                 self.children.append(question_or_choice)
@@ -346,8 +346,8 @@ class XFormToDictBuilder:
     def _get_item_func(self, ref, name, item):
         rs = {}
         name_splits = name.split('/')
-        rs['name'] = name_splits[0]
-        ref = '%s/%s' % (ref, rs['name'])
+        rs[constants.NAME] = name_splits[0]
+        ref = '%s/%s' % (ref, rs[constants.NAME])
         rs['ref'] = ref
         if name_splits.__len__() > 1:
             rs['type'] = 'group'
@@ -377,14 +377,14 @@ class XFormToDictBuilder:
         elif 'nodeset' in obj:
             ref = obj['nodeset']
         # Look for the 'nodeset' in this question's associated 'bind'.
-        elif any( (True for binding in self.bindings if binding['id'] == obj['bind']) ):
-            associated_binding= [binding for binding in self.bindings if binding['id'] == obj['bind']][0]
-            ref= associated_binding['nodeset']
+        elif any( (True for binding in self.bindings if binding['id'] == obj[constants.BIND]) ):
+            associated_binding= [binding for binding in self.bindings if binding['id'] == obj[constants.BIND]][0]
+            ref= associated_binding[constants.NODESET_XFORM]
         else:
             raise TypeError('cannot find "ref" or "nodeset" in {} or associated bind {}'.format(repr(obj), associated_binding))
         
         question = {'ref': ref, '__order': self._get_question_order(ref)}
-        question['name'] = self._get_name_from_ref(ref)
+        question[constants.NAME] = self._get_name_from_ref(ref)
         if 'hint' in obj:
             k, v = self._get_label(obj['hint'], 'hint')
             question[k] = v
@@ -420,11 +420,11 @@ class XFormToDictBuilder:
                         'label' in itm.keys() and 'value' in itm.keys():
                     k, v = self._get_label(itm['label'])
                     children.append(
-                        {'name': itm['value'], k: v})
+                        {constants.NAME: itm['value'], k: v})
             question['children'] = children
         
-        if obj.get(pyxform.constants.ITEMSET_XFORM):
-            question[pyxform.constants.ITEMSET_XFORM]= obj[pyxform.constants.ITEMSET_XFORM]
+        if obj.get(constants.ITEMSET_XFORM):
+            question[constants.ITEMSET_XFORM]= obj[constants.ITEMSET_XFORM]
         
         # Record the question type.
         if question.get('type', '').startswith('xsd:'):
@@ -440,13 +440,13 @@ class XFormToDictBuilder:
         else:
             question_type= element_tag
         # Form notes.
-        if question_type == 'text' and 'bind' in question \
-                and 'readonly' in question['bind']:
+        if question_type == 'text' and constants.BIND in question \
+                and 'readonly' in question[constants.BIND]:
             question_type = question['type'] = 'note'
             # Remove the 'readonly' field of the 'bind' and remove it altogether if now empty.
-            del question['bind']['readonly']
-            if len(question['bind'].keys()) == 0:
-                del question['bind']
+            del question[constants.BIND]['readonly']
+            if len(question[constants.BIND].keys()) == 0:
+                del question[constants.BIND]
         if question_type in ['group', 'repeat']:
             if question_type == 'group' and 'repeat' in obj:
                 question['children'] = \
@@ -469,10 +469,10 @@ class XFormToDictBuilder:
         
         # Denote multiple choice questions as prescribed by xlsform.org.
         if (question_type in pyxform.aliases.select):
-            if  pyxform.aliases.select[question_type] == pyxform.constants.SELECT_ONE:
-                question_type= pyxform.constants.SELECT_ONE_XLSFORM
-            elif pyxform.aliases.select[question_type] == pyxform.constants.SELECT_ALL_THAT_APPLY:
-                question_type= pyxform.constants.SELECT_ALL_THAT_APPLY_XLSFORM
+            if  pyxform.aliases.select[question_type] == constants.SELECT_ONE:
+                question_type= constants.SELECT_ONE_XLSFORM
+            elif pyxform.aliases.select[question_type] == constants.SELECT_ALL_THAT_APPLY:
+                question_type= constants.SELECT_ALL_THAT_APPLY_XLSFORM
         
         if question_type:
             question['type'] = question_type
@@ -523,9 +523,9 @@ class XFormToDictBuilder:
                                 v = 'no'
                         if k in ['constraint', 'relevant', 'calculate']:
                             v = self._shorten_xpaths_in_string(v)
-                        if 'bind' not in rs:
-                            rs['bind'] = {}
-                        rs['bind'][k] = v
+                        if constants.BIND not in rs:
+                            rs[constants.BIND] = {}
+                        rs[constants.BIND][k] = v
                         continue
                     rs[k] = v
                 if 'preloadParams' in rs and 'preload' in rs:

@@ -31,8 +31,12 @@ LOOP = u"loop"
 COLUMNS = u"columns"
 
 CHILDREN = u"children"
-
+PARENT= u'parent'
+MODEL_XFORM= u'model'
+BODY_XFORM= u'body'
+INSTANCE_XFORM= u'instance'
 META_XFORM= u'meta'
+REF_XFORM= u'ref'
 
 
 # XFrom bind attributes: http://opendatakit.github.io/odk-xform-spec/#bind-attributes.

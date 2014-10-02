@@ -2,15 +2,11 @@
 import re
 import tempfile
 import codecs
-import os
-import base64
-import csv
 from datetime import datetime
 from collections import defaultdict
 
 # 'pyxform'-internal.
 import pyxform.survey_to_xlsform
-import pyxform.question
 from section import Section
 from question import Question
 from utils import node
@@ -36,23 +32,23 @@ class Survey(Section):
         {
             u"_xpath": dict,
             u"_created": datetime.now, #This can't be dumped to json
-            u"title": unicode,
-            u"id_string": unicode,
-            u"sms_keyword": unicode,
-            u"sms_separator": unicode,
-            u"sms_allow_media": bool,
-            u"sms_date_format": unicode,
-            u"sms_datetime_format": unicode,
-            u"sms_response": unicode,
+            constants.TITLE: unicode,
+            constants.ID_STRING: unicode,
+            constants.SMS_KEYWORD: unicode,
+            constants.SMS_SEPARATOR: unicode,
+            constants.SMS_ALLOW_MEDIA: bool,
+            constants.SMS_DATE_FORMAT: unicode,
+            constants.SMS_DATETIME_FORMAT: unicode,
+            constants.SMS_RESPONSE: unicode,
             u"file_name": unicode,
-            u"default_language": unicode,
+            constants.DEFAULT_LANGUAGE: unicode,
             u"_translations": dict,
-            u"submission_url": unicode,
-            u"public_key": unicode,
+            constants.SUBMISSION_URL: unicode,
+            constants.PUBLIC_KEY: unicode,
             u"instance_xmlns": unicode,
-            u"version": unicode,
-            u"choices": dict,
-            u"style": unicode
+            constants.VERSION: unicode,
+            constants.CHOICES: dict,
+            constants.STYLE: unicode
         }
     )
         
@@ -118,7 +114,7 @@ class Survey(Section):
         model_children = []
         if self._translations:
             model_children.append(self.itext())
-        model_children += [node("instance", self.xml_instance())]
+        model_children += [node(constants.INSTANCE_XFORM, self.xml_instance())]
         model_children += list(self._generate_static_instances())
         model_children += self.xml_bindings()
 
@@ -130,7 +126,7 @@ class Survey(Section):
                 submission_attrs["base64RsaPublicKey"] = self.public_key
             submission_node = node("submission", method="form-data-post", **submission_attrs)
             model_children.insert(0, submission_node)
-        return node("model",  *model_children)
+        return node(constants.MODEL_XFORM,  *model_children)
 
     def xml_instance(self):
         result = Section.xml_instance(self)
@@ -141,7 +137,7 @@ class Survey(Section):
             result.setAttribute(u"xmlns", self.instance_xmlns)
 
         if self.version:
-            result.setAttribute(u"version", self.version)
+            result.setAttribute(constants.VERSION, self.version)
         return result
 
     def _add_to_nested_dict(self, dicty, path, value):
@@ -413,8 +409,18 @@ class Survey(Section):
         """
         from instance import SurveyInstance
         return SurveyInstance(self)
-            
-    
+
+
+    def to_xform(self, out_file_path):
+        '''
+        Convert the survey to a XML XForm.
+        
+        :param str out_file_path: Filesystem path to the desired output file.
+        '''
+        
+        self.print_xform_to_file(out_file_path)
+
+
     def to_xls(self, out_file_path):
         '''
         Convert the survey to a XLS-encoded XForm.
@@ -423,8 +429,8 @@ class Survey(Section):
         '''
         
         pyxform.survey_to_xlsform.to_xls(self, out_file_path)
-    
-           
+
+
     def to_csv(self, out_file_path):
         '''
         Convert the survey to a CSV-formatted XForm.
