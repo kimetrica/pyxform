@@ -371,7 +371,7 @@ class XFormToDictBuilder:
             return self.ordered_binding_refs.__len__() + 1
 
     def _get_question_from_object(self, obj, element_tag=None):
-        ref = None
+
         if 'ref' in obj:
             ref = obj['ref']
         elif 'nodeset' in obj:
@@ -381,9 +381,8 @@ class XFormToDictBuilder:
             associated_binding= [binding for binding in self.bindings if binding['id'] == obj['bind']][0]
             ref= associated_binding['nodeset']
         else:
-            
-            raise TypeError('cannot find "ref" or "nodeset" in {} or associated bind {}'.format(repr(obj)))
-                
+            raise TypeError('cannot find "ref" or "nodeset" in {} or associated bind {}'.format(repr(obj), associated_binding))
+        
         question = {'ref': ref, '__order': self._get_question_order(ref)}
         question['name'] = self._get_name_from_ref(ref)
         if 'hint' in obj:
@@ -423,6 +422,9 @@ class XFormToDictBuilder:
                     children.append(
                         {'name': itm['value'], k: v})
             question['children'] = children
+        
+        if obj.get(pyxform.constants.ITEMSET_XFORM):
+            question[pyxform.constants.ITEMSET_XFORM]= obj[pyxform.constants.ITEMSET_XFORM]
         
         # Record the question type.
         if question.get('type', '').startswith('xsd:'):
