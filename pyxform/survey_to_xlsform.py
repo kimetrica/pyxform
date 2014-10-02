@@ -15,144 +15,239 @@ import os
 import pandas
 
 import pyxform.question
+import pyxform.question_type_dictionary
 from pyxform import constants
 from pyxform.errors import PyXFormError
 
 
-def _to_sheet_dfs(survey):
-    '''
-    Prepare a representation of the survey ready to be easily exported as a 
-    XLSForm spreadsheet.
+class XlsFormExporter():
     
-    :return: Spreadsheet data (in rows) keyed by sheet name.
-    :rtype: {str: DataFrame}
-    '''
-    
-    # TODO: Groups/repeats, 'or_other', hints, constraints, ...
-    
-    # Record the survey's settings if present.
-    settings_row= dict()
-    if constants.NAME in survey:
-        settings_row['form_id']= survey[constants.NAME]
-    if constants.TITLE in survey:
-        settings_row['form_title']= survey[constants.TITLE]
-    # TODO: More potential settings listed at xlsform.org.
-    settings_sheet_df= pandas.DataFrame.from_dict([settings_row])
-    
-    survey_sheet_df= pandas.DataFrame()
-    choices_sheet_df= pandas.DataFrame()
-    
-    # Keep track of 'label' columns.
-    survey_label_columns= set()
-    choices_label_columns= set()
-    
-    questions= survey['children']
-    for q in questions:
-        # Directly extract the fields from 'survey_sheet_columns' for this \
-        #   question. Each row of data is stored as an individual 'dict'.
+    def __init__(self, survey):
+        '''
+        Prepare a representation of the survey ready to be easily exported as a 
+        XLSForm spreadsheet.
+
+        :param pyxform.survey.Survey survey: The survey to be exported.
+        '''
+        
+        # TODO: Repeats, 'or_other', hints, constraints, ...
+        
+        self.survey_sheet_df= pandas.DataFrame()
+        self.choices_sheet_df= pandas.DataFrame()
+        self.settings_sheet_df= pandas.DataFrame()
+
+        # Keep track of 'label' columns.
+        self.survey_label_columns= set()
+        self.choices_label_columns= set()
+        
+        self.record_settings(survey)
+        
+        for survey_child in survey['children']:
+            if isinstance(survey_child, pyxform.question.Question):
+                self.record_question_data(survey_child)
+            elif isinstance(survey_child, pyxform.section.GroupedSection):
+                self.record_grouped_section(survey_child)
+            else:
+                raise PyXFormError('Unexpected survey child type "{}".'.format(type(survey_child)))
+        
+        self.sheet_dfs= {
+          constants.SURVEY:     self.survey_sheet_df,
+          constants.CHOICES:    self.choices_sheet_df,
+          constants.SETTINGS:   self.settings_sheet_df,
+        }
+
+
+    def record_question_data(self, question):
+        '''
+        Record the given question and any associated data such as the options 
+        for multiple-choice questions.
+        
+        :param pyxform.question.Question question:
+        '''
+        
+        # Buffer the question's eventual additions to the 'survey' sheet.
         survey_row= dict()
         
-        # Mandatory column 'type'.
-        if isinstance(q, pyxform.question.MultipleChoiceQuestion) and \
-          ( q[constants.TYPE] in {constants.SELECT_ONE, constants.SELECT_ALL_THAT_APPLY} ):
+        question_name= question[constants.NAME]
+        xlsform_question_type= self._get_xlsform_question_type(question)
+        
+        if isinstance(question, pyxform.question.MultipleChoiceQuestion):
             # Special handling for select-type questions.
             
-            # TODO: Would be nice to reuse the 'list name' when encountering reused sets of choices. 
-            list_name= base64.urlsafe_b64encode(os.urandom(16))
+            # Check that the reported 'type' matches the object type.
+            if xlsform_question_type not in \
+              [constants.SELECT_ONE_XLSFORM, constants.SELECT_ALL_THAT_APPLY_XLSFORM]:
+                raise PyXFormError('Unexpected multiple-choice question type "{}"'.format(question['type']))
+            
+            
+            # TODO: Would be nice to reuse the 'list name' when encountering reused sets of choices.
+            # Generate a 'list name' comprised of the question name followed by 8 random bytes cast to string.
+            list_name= question_name + '_' + base64.urlsafe_b64encode(os.urandom(8))
             
             # Strip out any non-alphanumeric characters so KoBoForm can import. \
             #   Decreasing the space of possible strings, while an egregious \
             #   affront, should be safe.
-            list_name= re.compile('[\W_]+').sub('', list_name)
+            list_name= re.compile('[\W_]+').sub('_', list_name)
             
-            if q['type'] == constants.SELECT_ONE:
-                question_type_text= constants.SELECT_ONE_XLSFORM
-            elif q['type'] == constants.SELECT_ALL_THAT_APPLY:
-                question_type_text= constants.SELECT_ALL_THAT_APPLY_XLSFORM
+            survey_row[constants.TYPE]= xlsform_question_type + ' ' + list_name
+            
+            # TODO: Handle cascading-select questions (http://opendatakit.github.io/odk-xform-spec/#secondary-instances).
+            # If the question appears to be a cascading-select, report in the \
+            #   output that the question choices could not be gathered.
+            if question.get(constants.ITEMSET_XFORM):
+                manual_sad_choice_row= \
+                  {constants.LIST_NAME: list_name,
+                   constants.NAME: 'question_choices_not_imported',
+                   constants.LABEL: 'Apologies, your choices for this (cascading-select) question could not be automatically imported.'
+                   }
+                self.choices_sheet_df= pandas.concat([self.choices_sheet_df, pandas.DataFrame.from_dict([manual_sad_choice_row])])
+                
             else:
-                raise PyXFormError('Unexpected multiple-choice question type "{}"'.format(q['type']))
+                # Extract and record the choices.
+                for question_choice in question[constants.CHILDREN]:
+                    self.record_question_choice(question_choice, list_name)
             
-            survey_row[constants.TYPE]= question_type_text + ' ' + list_name
-            
-            # Extract and record the choices.
-            choices= q[constants.CHILDREN]
-            for c in choices:
-                # Mandatory column 'list name'.
-                choices_row= {constants.LIST_NAME: list_name}
-                # Mandatory column 'name'.
-                choices_row[constants.NAME]= c[constants.NAME]
-                # Mandatory 'label' column(s).
-                choice_labels= _get_question_or_choice_labels(c)
-                choices_row.update(choice_labels)
-                choices_label_columns.update(choice_labels.keys()) # Track any new label columns encountered.
-                
-                # Add the row into the 'choices' sheet.
-                choices_sheet_df= pandas.concat([choices_sheet_df, pandas.DataFrame.from_dict([choices_row])])
-                
-                
         # Non-select questions
-        elif q[constants.TYPE] in set(constants.XLSFORM_TYPES).union(constants.XLSFORM_METADATA_TYPES):
-            survey_row[constants.TYPE]= q[constants.TYPE]
-        elif q[constants.TYPE] in constants.XFORM_TO_XLSFORM_TYPES:
-            survey_row[constants.TYPE]= constants.XFORM_TO_XLSFORM_TYPES[q[constants.TYPE]]
         else:
-            raise PyXFormError('Unexpected XLSForm type "{}".'.format(q[constants.TYPE]))
-        
+            survey_row[constants.TYPE]= xlsform_question_type
+
         # Mandatory column 'name'.
-        survey_row[constants.NAME]= q[constants.NAME]
+        survey_row[constants.NAME]= question_name
         
         # Mandatory 'label' column(s).
-        question_labels= _get_question_or_choice_labels(q)
+        question_labels= self._get_question_or_choice_labels(question)
         survey_row.update(question_labels)
-        survey_label_columns.update(question_labels.keys()) # Track any new label columns encountered.
-        
+        self.survey_label_columns.update(question_labels.keys()) # Track any new label columns encountered.
+
+        if xlsform_question_type == constants.CALCULATE_XLSFORM:
+            survey_row['calculation']= question[constants.BIND][constants.CALCULATE_XLSFORM]
+
         # Add the row into the 'survey' sheet.
-        survey_sheet_df= pandas.concat([survey_sheet_df, pandas.DataFrame.from_dict([survey_row])])
-    
-    # If only one translation, rename translated label column (e.g. \
-    #   'label::English') to 'label'.
-    if len(survey_label_columns) == 1:
-        survey_sheet_df.rename( \
-          columns={survey_label_columns.pop(): constants.LABEL}, inplace=True)
-    if len(choices_label_columns) == 1:
-        choices_sheet_df.rename( \
-          columns={choices_label_columns.pop(): constants.LABEL}, inplace=True)
-    
-    sheet_dfs= dict()
-    if len(settings_sheet_df):
-        sheet_dfs[constants.SETTINGS]= settings_sheet_df
-    if len(survey_sheet_df):
-        sheet_dfs[constants.SURVEY]= survey_sheet_df
-    if len(choices_sheet_df):
-        sheet_dfs[constants.CHOICES]= choices_sheet_df
-    
-    return sheet_dfs
+        self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([survey_row])])
 
 
-def _get_question_or_choice_labels(question_or_choice):
-    '''
-    Return a dictionary containing the question/choice's singular label or its 
-    translations, if present, ready for export to an XLSForm. Labels are keyed 
-    by 'label' or 'label::Language'.
+    def record_question_choice(self, question_choice, list_name):
+        '''
+        Record the 
+        '''
+        # Mandatory column 'list name'.
+        choices_row= {constants.LIST_NAME: list_name}
+        # Mandatory column 'name'.
+        choices_row[constants.NAME]= question_choice[constants.NAME]
+        # Mandatory 'label' column(s).
+        choice_labels= self._get_question_or_choice_labels(question_choice)
+        choices_row.update(choice_labels)
+        
+        # Track any new label columns (translations like 'label::English') encountered.
+        self.choices_label_columns.update(choice_labels.keys())
+        
+        # Add the row into the 'choices' sheet.
+        self.choices_sheet_df= pandas.concat([self.choices_sheet_df, pandas.DataFrame.from_dict([choices_row])])
+        
+
+    def record_grouped_section(self, grouped_section):
+        '''
+        Record the data associated with a group of questions.
+        
+        :param 
+        '''
+        
+        # Record the question group and return.
+        
+        if grouped_section[constants.NAME] == constants.META_XFORM:
+            # Do not export the 'meta' group.
+            return
+        
+        # Generate and insert the group's header.
+        group_header= {constants.TYPE: u'begin group'}
+        if constants.NAME in grouped_section:
+            group_header[constants.NAME]= grouped_section[constants.NAME]
+        if constants.LABEL in grouped_section:
+            question_labels= self._get_question_or_choice_labels(grouped_section)
+            group_header.update(question_labels)
+        self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([group_header])])
+        
+        # Insert the grouped questions.
+        for question in grouped_section['children']:
+            self.record_question_data(question)
+        
+        # Insert the group's footer.
+        group_footer= {constants.TYPE: u'end group'}
+        self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([group_footer])])
+
+
+    def record_settings(self, survey):
+        # Record the survey's settings if present.
+        # TODO: More potential settings listed at xlsform.org.
+        if constants.NAME in survey:
+            self.settings_sheet_df['form_id']= [survey[constants.NAME]]
+        if constants.TITLE in survey:
+            self.settings_sheet_df['form_title']= [survey[constants.TITLE]]
+
     
-    :return: Spreadsheet data (in rows) keyed by sheet name.
-    :rtype: {str: DataFrame}
-    '''
+    @staticmethod
+    def _get_xlsform_question_type(question):
+        '''
+        Determine the XLSForm-compatible question type of the given question.
+        
+        :param pyxform.question.Question question:
+        :return: An XLSForm-compatible question type.
+        :rtype: str
+        '''
+        
+        original_question_type= question[constants.TYPE]
+        xlsform_question_type= None
+        
+        if original_question_type in set(constants.XLSFORM_TYPES).union(constants.XLSFORM_METADATA_TYPES):
+            # The question type is already valid for use in an XLSForm.
+            xlsform_question_type= original_question_type
+        
+        elif original_question_type in constants.XFORM_TO_XLSFORM_TYPES:
+            # The question type is an XForm type with a known XLSForm equivalent.
+            xlsform_question_type= constants.XFORM_TO_XLSFORM_TYPES[original_question_type]
+        
+        elif original_question_type in pyxform.question_type_dictionary.QUESTION_TYPE_DICT:
+            # The question type is a known type possibly with an XForm equivalent.
+            # FIXME: This wouldn't be necessary if 'Question' internally standardized \
+            #   to use types from the XForm (or XLSForm) spec.
+            possible_xform_question_type= \
+              pyxform.question_type_dictionary.QUESTION_TYPE_DICT[original_question_type][constants.BIND][constants.TYPE]
+            if possible_xform_question_type in constants.XFORM_TO_XLSFORM_TYPES:
+                xlsform_question_type= constants.XFORM_TO_XLSFORM_TYPES[possible_xform_question_type]
+        elif original_question_type == 'group':
+            xlsform_question_type= original_question_type
+            
+        if not xlsform_question_type:
+            raise PyXFormError('Unexpected XLSForm type "{}".'.format(question[constants.TYPE]))
+        else:
+            return xlsform_question_type
+
     
-    labels= dict()
-    if isinstance(question_or_choice.get(constants.LABEL), basestring) \
-      and (question_or_choice[constants.LABEL] != ''):
-        # Simple label.
-        label_column= constants.LABEL
-        labels[label_column]= question_or_choice[constants.LABEL]
-    elif question_or_choice.get(constants.LABEL):
-        # Label(s) provided in a 'dict' of translations.
-        for language in question_or_choice[constants.LABEL].iterkeys():
-            label_column= constants.LABEL + '::' + language
-            labels[label_column]= question_or_choice[constants.LABEL][language]
-    
-    return labels
-    
+    @staticmethod
+    def _get_question_or_choice_labels(question_or_choice):
+        '''
+        Return a dictionary containing the question/choice's singular label or its 
+        translations, if present, ready for export to an XLSForm. Labels are keyed 
+        by 'label' or 'label::Language'.
+        
+        :return: Spreadsheet data (in rows) keyed by sheet name.
+        :rtype: {str: DataFrame}
+        '''
+        
+        labels= dict()
+        if isinstance(question_or_choice.get(constants.LABEL), basestring) \
+          and (question_or_choice[constants.LABEL] != ''):
+            # Simple label.
+            label_column= constants.LABEL
+            labels[label_column]= question_or_choice[constants.LABEL]
+        elif question_or_choice.get(constants.LABEL):
+            # Label(s) provided in a 'dict' of translations.
+            for language in question_or_choice[constants.LABEL].iterkeys():
+                label_column= constants.LABEL + '::' + language
+                labels[label_column]= question_or_choice[constants.LABEL][language]
+        
+        return labels
+
 
 def to_xls(survey, out_file_path):
     '''
@@ -163,7 +258,7 @@ def to_xls(survey, out_file_path):
     '''
     
     # Organize the data for spreadsheet output.
-    sheet_dfs= _to_sheet_dfs(survey)
+    sheet_dfs= XlsFormExporter(survey).sheet_dfs
     
     xls_writer= pandas.ExcelWriter(out_file_path, encoding='UTF-8')
     for sheet_name, df in sheet_dfs.iteritems():
@@ -181,7 +276,7 @@ def to_csv(survey, out_file_path):
     '''
     
     # Organize the data for spreadsheet output.
-    sheet_dfs= _to_sheet_dfs(survey)
+    sheet_dfs= XlsFormExporter(survey).sheet_dfs
     
     csv_buffer= str()
     for sheet_name, df in sheet_dfs.iteritems():
