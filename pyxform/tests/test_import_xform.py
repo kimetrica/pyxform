@@ -1,5 +1,5 @@
 '''
-.. module:: import_xml_tests
+.. module:: test_import_xform
     :Date: 2014/09/15
     
 .. codeauthor:: Esmail Fadae <esmail.fadae@kobotoolbox.org>
@@ -12,17 +12,17 @@ import os.path
 from pyxform import xform2json
 
 
-class ImportXmlTests(unittest.TestCase):
+class Test_ImportXForm(unittest.TestCase):
     test_directory_path= os.path.dirname(__file__)
 
-    def single_select_one_test(self):
+    def test_single_select_one_survey(self):
         '''
         Test that an XForm with a single "Select One" question is imported \
         correctly.
         '''
         
         xml_in_path= os.path.join(self.test_directory_path,\
-                                  'example_xml/single_select_one_survey.xml')
+                                  'example_xforms/single_select_one_survey.xml')
         
         survey= xform2json.XFormToDictBuilder(xml_in_path).survey()
         self.assertEqual(survey['title'], 'Single "select one" survey')
@@ -44,14 +44,14 @@ class ImportXmlTests(unittest.TestCase):
             self.assertEqual(o['name'], 'option_{}'.format(o_num))
 
 
-    def single_select_many_test(self):
+    def test_single_select_many_survey(self):
         '''
         Test that an XForm with a single "Select Many" question is imported \
         correctly.
         '''
         
         xml_in_path= os.path.join(self.test_directory_path,\
-                                  'example_xml/single_select_many_survey.xml')
+                                  'example_xforms/single_select_many_survey.xml')
         
         survey= xform2json.XFormToDictBuilder(xml_in_path).survey()
         self.assertEqual(survey['title'], 'Single "Select Many" Survey')
@@ -73,14 +73,14 @@ class ImportXmlTests(unittest.TestCase):
             self.assertEqual(o['name'], 'option_{}'.format(o_num))
 
 
-    def multiple_select_question_test(self):
+    def test_multiple_select_question_survey(self):
         '''
         Test that an XForm with a "Select One" and a "Select Many" question is \
         imported correctly.
         '''
         
         xml_in_path= os.path.join(self.test_directory_path,\
-                            'example_xml/multiple_select_question_survey.xml')
+                            'example_xforms/multiple_select_question_survey.xml')
         
         survey= xform2json.XFormToDictBuilder(xml_in_path).survey()
         self.assertEqual(survey['title'], 'Multiple "Select" Question Survey.')
