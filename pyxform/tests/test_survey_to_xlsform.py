@@ -10,8 +10,7 @@ import unittest
 import os.path
 import tempfile
 
-import pyxform.survey_from
-
+from pyxform import survey_from
 from pyxform import constants
 
 
@@ -45,10 +44,10 @@ class Test_SurveyToXlsForm(unittest.TestCase):
             # Export the XForm survey to an XLSForm file and re-import it.
             if file_format.lower() == 'xls':
                 original_survey.to_xls(xlsform_tempfile.name)
-                xlsform_survey= pyxform.survey_from.xls(xlsform_tempfile)
+                xlsform_survey= survey_from.xls(xlsform_tempfile)
             elif file_format.lower() == 'csv':
                 original_survey.to_csv(xlsform_tempfile.name)
-                xlsform_survey= pyxform.survey_from.csv(xlsform_tempfile)
+                xlsform_survey= survey_from.csv(xlsform_tempfile)
             
             return xlsform_survey
         
@@ -60,7 +59,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
                 
         for xform_in_p in self.xform_in_paths:            
             # Import and store the XForm.
-            xform_survey= pyxform.survey_from.xform(xform_in_p)
+            xform_survey= survey_from.xform(xform_in_p)
             
             xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
 
@@ -79,7 +78,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         # Get the Unicode survey's absolute path.
         unicode_survey_path= os.path.join(self.xform_directory_path, 'unicode_survey.xml')
         
-        xform_survey= pyxform.survey_from.xform(unicode_survey_path)
+        xform_survey= survey_from.xform(unicode_survey_path)
         
         # Test XLS re-import.
         xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
@@ -118,7 +117,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
            (u'meta', u'group')]
 
         # Import the XForm then export it to XLS and re-import the XLSForm.
-        xform_survey= pyxform.survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf2.xml'))
+        xform_survey= survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf2.xml'))
         xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
 
         for i, (xform_child, xls_child) in enumerate( zip(xform_survey['children'], xls_survey['children']) ):
@@ -130,7 +129,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
             # Check that the types from the imports all de-alias to the same thing as the expected types.
             self.assertEqual(get_xform_question_type(xform_child['type']), get_xform_question_type(expected_type))
             self.assertEqual(get_xform_question_type(xls_child['type']), get_xform_question_type(expected_type))
-            
+
 
     def test_question_types_imported_in_order_kf1(self):
         '''
@@ -157,11 +156,35 @@ class Test_SurveyToXlsForm(unittest.TestCase):
           (u'Barcode_question', u'barcode'),
           (u'Acknowledge_question', u'acknowledge')]
         
-        survey = pyxform.survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf1.xml'))
+        survey = survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf1.xml'))
         question_types_list = list()
         for q in survey['children']:
             question_types_list.append( (q['name'], q['type']) )
         self.assertListEqual(question_types_list, expected_qtypes_list)
+
+
+    def test_translations(self):
+        '''
+        Test that XForms with translations can be imported successfully and that 
+        the translations can be exported to a XLSForm.
+        '''
+        
+        xform_survey_translated= survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf1_translations_inserted.xml'))
+        xlsform_survey_translated= self._get_corresponding_xlsform_survey(xform_survey_translated, 'xls')
+        
+        for xform_child, xlsform_child in zip(xform_survey_translated['children'], xlsform_survey_translated['children']):
+            # Only check children (questions) with labels.
+            if xform_child.get('label'):
+                xform_label_english= xform_child['label']['English']
+                xform_label_not_english= xform_child['label']['Not_English']
+                self.assertEqual('(Not_English) ' + xform_label_english, xform_label_not_english)
+    
+                xlsform_label_english= xlsform_child['label']['English']
+                xlsform_label_not_english= xlsform_child['label']['Not_English']
+                self.assertEqual('(Not_English) ' + xlsform_label_english, xlsform_label_not_english)
+                
+                self.assertEqual(xlsform_label_english, xform_label_english)
+                self.assertEqual(xlsform_label_not_english, xform_label_not_english)
 
 
 if __name__ == "__main__":
