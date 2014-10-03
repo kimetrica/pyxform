@@ -436,7 +436,7 @@ def workbook_to_json(
                                      + '|'.join(aliases.control.keys())
                                      + r"))( (over )?(?P<list_name>\S+))?$")
     select_regexp = re.compile(
-        r"^(?P<select_command>(" + '|'.join(aliases.select.keys())
+        r"^(?P<select_command>(" + '|'.join(aliases.multiple_choice.keys())
         + r")) (?P<list_name>\S+)"
         + "( (?P<specify_other>(or specify other|or_other|or other)))?$")
     cascading_regexp = re.compile(
@@ -661,13 +661,13 @@ def workbook_to_json(
         if select_parse:
             parse_dict = select_parse.groupdict()
             if parse_dict.get("select_command"):
-                select_type = aliases.select[parse_dict["select_command"]]
+                select_type = aliases.multiple_choice[parse_dict["select_command"]]
                 if select_type == 'select one external'\
                    and not 'choice_filter' in row:
                     warnings.append(rowFormatString % row_number +
                         u" select one external is only meant for"
                         u" filtered selects.")
-                    select_type = aliases.select[constants.SELECT_ONE_XLSFORM]
+                    select_type = aliases.multiple_choice[constants.SELECT_ONE_XLSFORM]
                 list_name = parse_dict["list_name"]
 
                 if list_name not in choices\

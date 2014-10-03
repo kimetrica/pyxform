@@ -1,4 +1,6 @@
 from pyxform.constants import * # This and 'pyxform.constants' are tightly related.
+from pyxform.question_type_dictionary import QUESTION_TYPE_DICT
+from pyxform.errors import PyXFormError
 
 #Aliases:
 #Ideally aliases should resolve to elements in the json form schema
@@ -13,25 +15,32 @@ control = {
     LOOP: LOOP,
     u"looped group": REPEAT
 }
-select = {
-    u"select_one_external": u"select one external",
-    # Select one.
+
+select1= {
     SELECT_ONE:                               SELECT_ONE,
     SELECT_ONE_XLSFORM:                       SELECT_ONE,
     SELECT_ONE_XFORM:                         SELECT_ONE, # KoBoForm.
     SELECT_ONE + u" from":                    SELECT_ONE,
     u"add " + SELECT_ONE + u" prompt using":  SELECT_ONE,
-    # Select multiple.
-    SELECT_ALL_THAT_APPLY:            SELECT_ALL_THAT_APPLY,
-    SELECT_ALL_THAT_APPLY_XLSFORM:    SELECT_ALL_THAT_APPLY, # XLSForm canonical.
-    SELECT_ALL_THAT_APPLY_XFORM:      SELECT_ALL_THAT_APPLY, # KoBoForm.
-    SELECT_ALL_THAT_APPLY + u" from": SELECT_ALL_THAT_APPLY,
-    u"add select multiple prompt using":        SELECT_ALL_THAT_APPLY,
 }
+
+select= {
+  SELECT_ALL_THAT_APPLY:            SELECT_ALL_THAT_APPLY,
+  SELECT_ALL_THAT_APPLY_XLSFORM:    SELECT_ALL_THAT_APPLY,
+  SELECT_ALL_THAT_APPLY_XFORM:      SELECT_ALL_THAT_APPLY,
+  SELECT_ALL_THAT_APPLY + u" from": SELECT_ALL_THAT_APPLY,
+  u"add select multiple prompt using":        SELECT_ALL_THAT_APPLY,
+}
+
+multiple_choice = {u"select_one_external": u"select one external"}
+multiple_choice.update(select1)
+multiple_choice.update(select)
+
 cascading = {
     u'cascading select': CASCADING_SELECT,
     CASCADING_SELECT: CASCADING_SELECT,
 }
+
 settings_header = {
     u"form_title": TITLE,
     u"set form title": TITLE,
@@ -45,6 +54,7 @@ settings_header = {
     PUBLIC_KEY: PUBLIC_KEY,
     SUBMISSION_URL: SUBMISSION_URL
 }
+
 #TODO: Check on bind prefix approach in json.
 #Conversion dictionary from user friendly column names to meaningful values
 survey_header = {
@@ -89,6 +99,7 @@ survey_header = {
     u"requiredMsg" : BIND + u"::jr:requiredMsg",
     u"required_message" : BIND + u"::jr:requiredMsg",
 }
+
 list_header = {
     u"caption": LABEL,
     u"list_name": LIST_NAME,
@@ -97,6 +108,7 @@ list_header = {
     AUDIO_XLSFORM: MEDIA + u"::" + AUDIO_XLSFORM,
     VIDEO_XLSFORM: MEDIA + u"::" + VIDEO_XLSFORM,
 }
+
 #Note that most of the type aliasing happens in all.xls
 type = {
     u"imei": DEVICEID_XLSFORM,
@@ -106,6 +118,7 @@ type = {
     u"add " + AUDIO_XLSFORM + u" prompt": AUDIO_XLSFORM,
     u"add " + VIDEO_XLSFORM + u" prompt": VIDEO_XLSFORM,
 }
+
 yes_no = {
     "yes": True,
     "Yes": True,
@@ -132,3 +145,75 @@ label_optional_types = [
     END_XLSFORM,
     TODAY_XLSFORM,
 ]
+
+
+def get_xform_question_type(original_question_type_str):
+    '''
+    Determine the XForm-compatible question type that corresponds to the given type.
+    
+    :param str original_question_type_str:
+    :return: An XForm-compatible question type.
+    :rtype: str
+    '''
+    
+    xform_question_type_str= None
+    
+    if original_question_type_str in select1:
+        xform_question_type_str= SELECT_ONE_XFORM
+    elif original_question_type_str in select:
+        xform_question_type_str= SELECT_ALL_THAT_APPLY_XFORM
+    elif original_question_type_str in XFORM_TYPES:
+        # The question type is already valid for use in an XForm.
+        xform_question_type_str= original_question_type_str
+    
+    elif original_question_type_str in XLSFORM_TO_XFORM_TYPES:
+        # The question type is an XLSForm type with a known XLSForm equivalent.
+        xform_question_type_str= XLSFORM_TO_XFORM_TYPES[original_question_type_str]
+
+    elif original_question_type_str in QUESTION_TYPE_DICT:
+        # The question type is a known type possibly with an XForm equivalent.
+        possible_xform_question_type= \
+          QUESTION_TYPE_DICT[original_question_type_str][BIND][TYPE]
+        if possible_xform_question_type in XFORM_TYPES:
+            xform_question_type_str= possible_xform_question_type
+    elif original_question_type_str == GROUP:
+        xform_question_type_str= original_question_type_str
+
+    if not xform_question_type_str:
+        raise PyXFormError('Unexpected XForm type "{}".'.format(original_question_type_str))
+    
+    return xform_question_type_str
+
+
+def get_xlsform_question_type(original_question_type_str):
+    '''
+    Determine the XLSForm-compatible question type that corresponds to the given type.
+    
+    :param str original_question_type_str:
+    :return: An XLSForm-compatible question type.
+    :rtype: str
+    '''
+    
+    xlsform_question_type_str= None
+    
+    if original_question_type_str in set(XLSFORM_TYPES).union(XLSFORM_METADATA_TYPES):
+        # The question type is already valid for use in an XLSForm.
+        xlsform_question_type_str= original_question_type_str
+    
+    elif original_question_type_str in XFORM_TO_XLSFORM_TYPES:
+        # The question type is an XForm type with a known XLSForm equivalent.
+        xlsform_question_type_str= XFORM_TO_XLSFORM_TYPES[original_question_type_str]
+
+    elif original_question_type_str == GROUP:
+        xlsform_question_type_str= original_question_type_str
+    else:
+        # FIXME: This wouldn't be necessary if 'Question' internally standardized \
+        #   to use types from the XForm (or alternatively XLSForm) spec.
+        xform_question_type= get_xform_question_type(original_question_type_str)
+        if xform_question_type in XFORM_TO_XLSFORM_TYPES:
+            xlsform_question_type_str= XFORM_TO_XLSFORM_TYPES[xform_question_type]
+
+    if not xlsform_question_type_str:
+        raise PyXFormError('Unexpected XLSForm type "{}".'.format(original_question_type_str))
+    else:
+        return xlsform_question_type_str

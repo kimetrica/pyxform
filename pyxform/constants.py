@@ -135,6 +135,8 @@ XFORM_TO_XLSFORM_TYPES= {
     BARCODE_XFORM: BARCODE_XFORM,
 }
 
+XLSFORM_TO_XFORM_TYPES= {xlsform_type: xform_type for xform_type, xlsform_type in XFORM_TO_XLSFORM_TYPES.iteritems()}
+
 START_XLSFORM=          u'start'
 END_XLSFORM=            u'end'
 TODAY_XLSFORM=          u'today'

@@ -15,7 +15,7 @@ import os
 import pandas
 
 import pyxform.question
-import pyxform.question_type_dictionary
+import pyxform.aliases
 from pyxform import constants
 from pyxform.errors import PyXFormError
 
@@ -69,7 +69,7 @@ class XlsFormExporter():
         survey_row= dict()
         
         question_name= question[constants.NAME]
-        xlsform_question_type= self._get_xlsform_question_type(question)
+        xlsform_question_type= pyxform.aliases.get_xlsform_question_type(question[constants.TYPE])
         
         if isinstance(question, pyxform.question.MultipleChoiceQuestion):
             # Special handling for select-type questions.
@@ -184,45 +184,7 @@ class XlsFormExporter():
         if constants.TITLE in survey:
             self.settings_sheet_df['form_title']= [survey[constants.TITLE]]
 
-    
-    @staticmethod
-    def _get_xlsform_question_type(question):
-        '''
-        Determine the XLSForm-compatible question type of the given question.
-        
-        :param pyxform.question.Question question:
-        :return: An XLSForm-compatible question type.
-        :rtype: str
-        '''
-        
-        original_question_type= question[constants.TYPE]
-        xlsform_question_type= None
-        
-        if original_question_type in set(constants.XLSFORM_TYPES).union(constants.XLSFORM_METADATA_TYPES):
-            # The question type is already valid for use in an XLSForm.
-            xlsform_question_type= original_question_type
-        
-        elif original_question_type in constants.XFORM_TO_XLSFORM_TYPES:
-            # The question type is an XForm type with a known XLSForm equivalent.
-            xlsform_question_type= constants.XFORM_TO_XLSFORM_TYPES[original_question_type]
-        
-        elif original_question_type in pyxform.question_type_dictionary.QUESTION_TYPE_DICT:
-            # The question type is a known type possibly with an XForm equivalent.
-            # FIXME: This wouldn't be necessary if 'Question' internally standardized \
-            #   to use types from the XForm (or XLSForm) spec.
-            possible_xform_question_type= \
-              pyxform.question_type_dictionary.QUESTION_TYPE_DICT[original_question_type][constants.BIND][constants.TYPE]
-            if possible_xform_question_type in constants.XFORM_TO_XLSFORM_TYPES:
-                xlsform_question_type= constants.XFORM_TO_XLSFORM_TYPES[possible_xform_question_type]
-        elif original_question_type == 'group':
-            xlsform_question_type= original_question_type
-            
-        if not xlsform_question_type:
-            raise PyXFormError('Unexpected XLSForm type "{}".'.format(question[constants.TYPE]))
-        else:
-            return xlsform_question_type
 
-    
     @staticmethod
     def _get_question_or_choice_labels(question_or_choice):
         '''

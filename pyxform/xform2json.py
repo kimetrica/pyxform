@@ -468,10 +468,10 @@ class XFormToDictBuilder:
             del question['hint']
         
         # Denote multiple choice questions as prescribed by xlsform.org.
-        if (question_type in pyxform.aliases.select):
-            if  pyxform.aliases.select[question_type] == constants.SELECT_ONE:
+        if (question_type in pyxform.aliases.multiple_choice):
+            if  pyxform.aliases.multiple_choice[question_type] == constants.SELECT_ONE:
                 question_type= constants.SELECT_ONE_XLSFORM
-            elif pyxform.aliases.select[question_type] == constants.SELECT_ALL_THAT_APPLY:
+            elif pyxform.aliases.multiple_choice[question_type] == constants.SELECT_ALL_THAT_APPLY:
                 question_type= constants.SELECT_ALL_THAT_APPLY_XLSFORM
         
         if question_type:

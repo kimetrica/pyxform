@@ -94,7 +94,7 @@ class SurveyElementBuilder(object):
 
     @staticmethod
     def _create_question_from_dict(question_dict, question_type_dictionary, add_none_option=False):
-        question_type_str = question_dict[u"type"]
+        question_type_str = question_dict[constants.TYPE]
         question_dict_copy = question_dict.copy()
         
         # TODO: Keep add none option?
@@ -113,8 +113,8 @@ class SurveyElementBuilder(object):
         question_class = SurveyElementBuilder._get_question_class(question_type_str, question_type_dictionary)
         
         # De-alias multiple-choice question types.
-        if question_type_str in aliases.select:
-            question_type_str= aliases.select[question_type_str]
+        if question_type_str in aliases.multiple_choice:
+            question_type_str= aliases.multiple_choice[question_type_str]
             question_dict_copy["type"] = question_type_str
             
         # todo: clean up this spaghetti code
@@ -164,8 +164,8 @@ class SurveyElementBuilder(object):
         if question_type_str in question_type_dictionary:
             question_type = question_type_dictionary[question_type_str]
         # De-alias multiple-choice question types.
-        elif question_type_str in aliases.select:
-            question_type= question_type_dictionary[ aliases.select[question_type_str] ]
+        elif question_type_str in aliases.multiple_choice:
+            question_type= question_type_dictionary[ aliases.multiple_choice[question_type_str] ]
         else:
             question_type= dict() # ...
         
