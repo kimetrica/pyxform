@@ -28,26 +28,43 @@ class Test_SurveyToXlsForm(unittest.TestCase):
                         for filename in os.listdir(self.xform_directory_path)]
 
 
+    @staticmethod
+    def _get_corresponding_xlsform_survey(original_survey, file_format='xls'):
+        '''
+        Given an already imported survey, generate the corresponding CSV-or-XLS-
+        -formatted XLSForm and import it.
+        
+        :param pyxform.survey.Survey original_survey:
+        :param str file_format: The desired intermediate file file_format. Either 'xls' (default) or 'csv'.
+        
+        :returns: An exported and re-imported version of the survey object.
+        :rtype: pyxform.survey.Survey original_survey
+        '''
+        
+        with tempfile.NamedTemporaryFile(suffix='-pyxform.'+ file_format) as xlsform_tempfile:
+            # Export the XForm survey to an XLSForm file and re-import it.
+            if file_format.lower() == 'xls':
+                original_survey.to_xls(xlsform_tempfile.name)
+                xlsform_survey= pyxform.survey_from.xls(xlsform_tempfile)
+            elif file_format.lower() == 'csv':
+                original_survey.to_csv(xlsform_tempfile.name)
+                xlsform_survey= pyxform.survey_from.csv(xlsform_tempfile)
+            
+            return xlsform_survey
+        
+
     def test_consistent_export(self):
         '''
-        Test that exporting a form to CSV and XLS result in the same data.
+        Test that exporting a form to CSV and XLS results in the same data.
         '''
                 
         for xform_in_p in self.xform_in_paths:            
             # Import and store the XForm.
             xform_survey= pyxform.survey_from.xform(xform_in_p)
             
-            with tempfile.NamedTemporaryFile(suffix='-pyxform.xls') as xls_tempfile:
-                # Export the XForm survey to an XLS-formatted XLSForm file.
-                xform_survey.to_xls(xls_tempfile.name)
-                # Import the XLSForm back in.
-                xls_survey= pyxform.survey_from.xls(xls_tempfile)
+            xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
 
-            with tempfile.NamedTemporaryFile(suffix='-pyxform.csv') as csv_tempfile:
-                # Export the XForm survey to a CSV-formatted XLSForm file.
-                xform_survey.to_csv(csv_tempfile.name)
-                # Import the XLSForm back in.
-                csv_survey= pyxform.survey_from.csv(csv_tempfile)
+            csv_survey= self._get_corresponding_xlsform_survey(xform_survey, 'csv')
 
             self.assertEqual(xls_survey, csv_survey, 'XLS and CSV XLSForm mismatch for "{}".'.format(xform_in_p))
 
@@ -57,23 +74,20 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         Test that Unicode text is correctly exported and re-importable.
         '''
         
-        EXPECTED_QUESTION_LABEL= u"Don't you just \u2764 Unicode\u203d"
-        XML_SURVEY_FILENAME= 'unicode_survey.xml'
+        expected_question_label= u"Don't you just \u2764 Unicode\u203d"
         
         # Get the Unicode survey's absolute path.
-        unicode_survey_path= [xform_in_p for xform_in_p in self.xform_in_paths \
-                             if os.path.split(xform_in_p)[1] == XML_SURVEY_FILENAME ][0]
+        unicode_survey_path= os.path.join(self.xform_directory_path, 'unicode_survey.xml')
         
         xform_survey= pyxform.survey_from.xform(unicode_survey_path)
         
         # Test XLS re-import.
-        with tempfile.NamedTemporaryFile(suffix='-pyxform.xls') as xls_tempfile:
-            xform_survey.to_xls(xls_tempfile.name)
-            xls_survey= pyxform.survey_from.xls(xls_tempfile)
+        xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
         
-            xls_question_label= xls_survey[constants.CHILDREN][0][constants.LABEL]
-            self.assertEqual(xls_question_label, EXPECTED_QUESTION_LABEL)
-        
+        # Check that the first question's Unicode label was preserved.
+        xls_question_label= xls_survey[constants.CHILDREN][0][constants.LABEL]
+        self.assertEqual(xls_question_label, expected_question_label)
+
 
     def test_all_question_types_kf2(self):
         '''
@@ -105,9 +119,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
         # Import the XForm then export it to XLS and re-import the XLSForm.
         xform_survey= pyxform.survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf2.xml'))
-        with tempfile.NamedTemporaryFile(suffix='-pyxform.xls') as xls_tempfile:
-            xform_survey.to_xls(xls_tempfile.name)
-            xls_survey= pyxform.survey_from.xls(xls_tempfile)
+        xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
 
         for i, (xform_child, xls_child) in enumerate( zip(xform_survey['children'], xls_survey['children']) ):
             expected_name, expected_type=  expected_child_info[i]
