@@ -1,4 +1,7 @@
 '''
+Tests importing of XForms. XForm importing is also tested in 
+'test_survey_to_xlsform' to a degree.
+
 .. module:: test_import_xform
     :Date: 2014/09/15
     
