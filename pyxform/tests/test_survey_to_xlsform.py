@@ -28,28 +28,32 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
 
     @staticmethod
-    def _get_corresponding_xlsform_survey(original_survey, file_format='xls'):
+    def _export_and_reimport(original_survey, export_format='xls'):
         '''
-        Given an already imported survey, generate the corresponding CSV-or-XLS-
-        -formatted XLSForm and import it.
+        Given a survey, export it in the format specified and return a 
+        re-imported version of it
         
         :param pyxform.survey.Survey original_survey:
-        :param str file_format: The desired intermediate file file_format. Either 'xls' (default) or 'csv'.
+        :param str export_format: The desired intermediate file export_format. 
+        Either 'xls' (default) 'csv', or 'xform'.
         
-        :returns: An exported and re-imported version of the survey object.
-        :rtype: pyxform.survey.Survey original_survey
+        :returns: An exported and re-imported version of the survey.
+        :rtype: pyxform.survey.Survey
         '''
         
-        with tempfile.NamedTemporaryFile(suffix='-pyxform.'+ file_format) as xlsform_tempfile:
-            # Export the XForm survey to an XLSForm file and re-import it.
-            if file_format.lower() == 'xls':
+        with tempfile.NamedTemporaryFile(suffix='-pyxform.'+ export_format) as xlsform_tempfile:
+            # Export the survey to file and re-import it.
+            if export_format.lower() == 'xls':
                 original_survey.to_xls(xlsform_tempfile.name)
-                xlsform_survey= survey_from.xls(xlsform_tempfile)
-            elif file_format.lower() == 'csv':
+                reimported_survey= survey_from.xls(xlsform_tempfile)
+            elif export_format.lower() == 'csv':
                 original_survey.to_csv(xlsform_tempfile.name)
-                xlsform_survey= survey_from.csv(xlsform_tempfile)
+                reimported_survey= survey_from.csv(xlsform_tempfile)
+            elif export_format.lower() == 'xform':
+                original_survey.to_xform(xlsform_tempfile.name)
+                reimported_survey= survey_from.xform(xlsform_tempfile)
             
-            return xlsform_survey
+            return reimported_survey
         
 
     def test_consistent_export(self):
@@ -61,9 +65,9 @@ class Test_SurveyToXlsForm(unittest.TestCase):
             # Import and store the XForm.
             xform_survey= survey_from.xform(xform_in_p)
             
-            xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
+            xls_survey= self._export_and_reimport(xform_survey, 'xls')
 
-            csv_survey= self._get_corresponding_xlsform_survey(xform_survey, 'csv')
+            csv_survey= self._export_and_reimport(xform_survey, 'csv')
 
             self.assertEqual(xls_survey, csv_survey, 'XLS and CSV XLSForm mismatch for "{}".'.format(xform_in_p))
 
@@ -81,7 +85,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         xform_survey= survey_from.xform(unicode_survey_path)
         
         # Test XLS re-import.
-        xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
+        xls_survey= self._export_and_reimport(xform_survey, 'xls')
         
         # Check that the first question's Unicode label was preserved.
         xls_question_label= xls_survey[constants.CHILDREN][0][constants.LABEL]
@@ -118,7 +122,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
         # Import the XForm then export it to XLS and re-import the XLSForm.
         xform_survey= survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf2.xml'))
-        xls_survey= self._get_corresponding_xlsform_survey(xform_survey, 'xls')
+        xls_survey= self._export_and_reimport(xform_survey, 'xls')
 
         for i, (xform_child, xls_child) in enumerate( zip(xform_survey['children'], xls_survey['children']) ):
             expected_name, expected_type=  expected_child_info[i]
@@ -170,7 +174,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         '''
         
         xform_survey_translated= survey_from.xform(os.path.join(self.xform_directory_path, 'all_question_types_survey_kf1_translations_inserted.xml'))
-        xlsform_survey_translated= self._get_corresponding_xlsform_survey(xform_survey_translated, 'xls')
+        xlsform_survey_translated= self._export_and_reimport(xform_survey_translated, 'xls')
         
         for xform_child, xlsform_child in zip(xform_survey_translated['children'], xlsform_survey_translated['children']):
             # Only check children (questions) with labels.
@@ -185,6 +189,38 @@ class Test_SurveyToXlsForm(unittest.TestCase):
                 
                 self.assertEqual(xlsform_label_english, xform_label_english)
                 self.assertEqual(xlsform_label_not_english, xform_label_not_english)
+
+
+    def test_cascading_select_graceful_failure(self):
+        '''
+        Test that when cascading-select questions are encountered while exporting
+        to XLSForm, though the question question_choices can't be imported, a descriptive 
+        failure message is inserted into the resulting file and that the file 
+        is valid for re-import.  
+        '''
+        
+        from pyxform.question import MultipleChoiceQuestion
+        from pyxform.survey_to_xlsform import XlsFormExporter
+        
+        survey_original= survey_from.xls(os.path.join(self.xform_directory_path, '../example_xls/new_cascading_select_xlsform.org.xlsx'))
+        
+        survey_reimported= self._export_and_reimport(survey_original, 'xls')
+        
+        for child_original, child_reimported in \
+          zip(survey_original['children'], survey_reimported['children']):
+            if isinstance(child_original, MultipleChoiceQuestion) and child_original.is_cascading_select():
+                cascading_select_question= child_reimported # Alias
+                
+                # Assert that a choice is provided.
+                self.assertIn('children', cascading_select_question)
+                
+                # Ensure exactly one choice is provided.
+                question_choices= cascading_select_question['children']
+                self.assertEqual(len(question_choices), 1)
+                
+                # Check that the choice correctly warns the user of an incomplete import.
+                self.assertEqual(question_choices[0]['name'], XlsFormExporter.CASCADING_SELECT_SAD_CHOICE_NAME)
+                self.assertEqual(question_choices[0]['label'], XlsFormExporter.CASCADING_SELECT_SAD_CHOICE_LABEL)
 
 
 if __name__ == "__main__":
