@@ -1,7 +1,8 @@
 '''
-Export 'Survey' objects to CSV-or-XLS-formatted XLSForms.
+Export 'Survey' objects to CSV-or-XLS-formatted XLSForms. Aliased and available 
+as methods on 'Survey' objects.
 
-.. module:: survey_to_spreadsheet
+.. module:: survey_to_xlsform
     :Date: 2014/09/24
 
 .. codeauthor: Esmail Fadae <esmail.fadae@kobotoolbox.org>
@@ -21,6 +22,9 @@ from pyxform.errors import PyXFormError
 
 
 class XlsFormExporter():
+    
+    CASCADING_SELECT_SAD_CHOICE_NAME= u'question_choices_not_imported'
+    CASCADING_SELECT_SAD_CHOICE_LABEL= u'Apologies, your choices for this (cascading-select) question could not be automatically imported.'
     
     def __init__(self, survey):
         '''
@@ -94,11 +98,11 @@ class XlsFormExporter():
             # TODO: Handle cascading-select questions (http://opendatakit.github.io/odk-xform-spec/#secondary-instances).
             # If the question appears to be a cascading-select, report in the \
             #   output that the question choices could not be gathered.
-            if question.get(constants.ITEMSET_XFORM):
+            if question.is_cascading_select():
                 manual_sad_choice_row= \
                   {constants.LIST_NAME: list_name,
-                   constants.NAME: 'question_choices_not_imported',
-                   constants.LABEL: 'Apologies, your choices for this (cascading-select) question could not be automatically imported.'
+                   constants.NAME: self.CASCADING_SELECT_SAD_CHOICE_NAME,
+                   constants.LABEL: self.CASCADING_SELECT_SAD_CHOICE_LABEL
                    }
                 self.choices_sheet_df= pandas.concat([self.choices_sheet_df, pandas.DataFrame.from_dict([manual_sad_choice_row])])
                 

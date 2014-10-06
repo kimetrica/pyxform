@@ -193,6 +193,16 @@ class MultipleChoiceQuestion(Question):
         return result
 
 
+    def is_cascading_select(self):
+        '''
+        Determine whether or not this is a cascading-select question.
+        
+        :rtype: bool
+        '''
+        
+        return bool((not self.get(constants.CHILDREN)) and self.get(constants.ITEMSET_XFORM))
+
+
 class SelectOneQuestion(MultipleChoiceQuestion):
     def __init__(self, *args, **kwargs):
         super(SelectOneQuestion, self).__init__(*args, **kwargs)
