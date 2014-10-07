@@ -195,8 +195,11 @@ class XFormToDictBuilder:
         'string': 'text'
     }
 
-    def __init__(self, xml_file):
-        doc_as_dict = XFormToDict(xml_file).get_dict()
+    def __init__(self, xml_file_or_string):
+        # TODO: File or string...
+        assert os.path.isfile(xml_file_or_string) or isinstance(xml_file_or_string, basestring)
+        
+        doc_as_dict = XFormToDict(xml_file_or_string).get_dict()
         self._xmldict = doc_as_dict
 
         assert 'html' in doc_as_dict
