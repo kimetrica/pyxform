@@ -28,14 +28,14 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
 
     @staticmethod
-    def _export_and_reimport(original_survey, export_format='xls'):
+    def _export_and_reimport(original_survey, export_format='xls', warnings=None):
         '''
         Given a survey, export it in the format specified and return a 
         re-imported version of it
         
         :param pyxform.survey.Survey original_survey:
-        :param str export_format: The desired intermediate file export_format. 
-        Either 'xls' (default) 'csv', or 'xform'.
+        :param str export_format: The desired intermediate file export_format. Either 'xls' (default) 'csv', or 'xform'.
+        :param list warnings: Optional list into which any warnings generated during import/export will be appended.
         
         :returns: An exported and re-imported version of the survey.
         :rtype: pyxform.survey.Survey
@@ -44,14 +44,14 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         with tempfile.NamedTemporaryFile(suffix='-pyxform.'+ export_format) as xlsform_tempfile:
             # Export the survey to file and re-import it.
             if export_format.lower() == 'xls':
-                original_survey.to_xls(xlsform_tempfile.name)
-                reimported_survey= survey_from.xls(xlsform_tempfile)
+                original_survey.to_xls(xlsform_tempfile.name, warnings=warnings)
+                reimported_survey= survey_from.xls(xlsform_tempfile, warnings=warnings)
             elif export_format.lower() == 'csv':
-                original_survey.to_csv(xlsform_tempfile.name)
-                reimported_survey= survey_from.csv(xlsform_tempfile)
+                original_survey.to_csv(xlsform_tempfile.name, warnings=warnings)
+                reimported_survey= survey_from.csv(xlsform_tempfile, warnings=warnings)
             elif export_format.lower() == 'xform':
-                original_survey.to_xform(xlsform_tempfile.name)
-                reimported_survey= survey_from.xform(xlsform_tempfile)
+                original_survey.to_xform(xlsform_tempfile.name, warnings=warnings)
+                reimported_survey= survey_from.xform(xlsform_tempfile, warnings=warnings)
             
             return reimported_survey
         
@@ -204,7 +204,10 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         
         survey_original= survey_from.xls(os.path.join(self.xform_directory_path, '../example_xls/new_cascading_select_xlsform.org.xlsx'))
         
-        survey_reimported= self._export_and_reimport(survey_original, 'xls')
+        warnings= list()
+        survey_reimported= self._export_and_reimport(survey_original, 'xls', warnings)
+        
+        self.assertIn(XlsFormExporter.CASCADING_SELECT_WARNING, warnings)
         
         for child_original, child_reimported in \
           zip(survey_original['children'], survey_reimported['children']):
