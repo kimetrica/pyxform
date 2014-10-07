@@ -411,31 +411,34 @@ class Survey(Section):
         return SurveyInstance(self)
 
 
-    def to_xform(self, out_file_path):
+    def to_xform(self, out_file_path, warnings=None):
         '''
         Convert the survey to a XML XForm.
         
         :param str out_file_path: Filesystem path to the desired output file.
+        :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
         self.print_xform_to_file(out_file_path)
 
 
-    def to_xls(self, out_file_path):
+    def to_xls(self, out_file_path, warnings=None):
         '''
         Convert the survey to a XLS-encoded XForm.
         
         :param str out_file_path: Filesystem path to the desired output file.
+        :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
         pyxform.survey_to_xlsform.to_xls(self, out_file_path)
 
 
-    def to_csv(self, out_file_path):
+    def to_csv(self, out_file_path, warnings=None):
         '''
         Convert the survey to a CSV-formatted XForm.
         
         :param str out_file_path: Filesystem path to the desired output file.
+        :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
         pyxform.survey_to_xlsform.to_csv(self, out_file_path)
