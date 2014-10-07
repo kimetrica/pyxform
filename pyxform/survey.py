@@ -419,7 +419,7 @@ class Survey(Section):
         :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
-        self.print_xform_to_file(out_file_path)
+        self.print_xform_to_file(out_file_path, warnings=warnings)
 
 
     def to_xls(self, out_file_path, warnings=None):
@@ -430,7 +430,7 @@ class Survey(Section):
         :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
-        pyxform.survey_to_xlsform.to_xls(self, out_file_path)
+        pyxform.survey_to_xlsform.to_xls(self, out_file_path, warnings=warnings)
 
 
     def to_csv(self, out_file_path, warnings=None):
@@ -441,4 +441,4 @@ class Survey(Section):
         :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
-        pyxform.survey_to_xlsform.to_csv(self, out_file_path)
+        pyxform.survey_to_xlsform.to_csv(self, out_file_path, warnings=warnings)
