@@ -14,12 +14,16 @@ import pyxform.xls2json
 import pyxform.builder
 
 
-def xform(xform_in_path):
+def xform(xform_in_path, warnings=False):
     '''
     Construct a 'Survey' object from an XML XForm.
     
     :param str xform_in_path: Path to the input file.
     '''
+    if isinstance(warnings, list):
+        warnings.append('''
+            XForm imports are not fully supported. Please check the correctness of the resulting survey.
+            '''.strip())
     survey= pyxform.xform2json.XFormToDictBuilder(xform_in_path).survey()
     return survey
 
