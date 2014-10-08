@@ -12,7 +12,6 @@ import pyxform.aliases
 from pyxform import constants
 from pyxform import builder
 
-
 ## {{{ http://code.activestate.com/recipes/573463/ (r7)
 class XmlDictObject(dict):
     """
@@ -161,25 +160,6 @@ def ConvertXmlToDict(root, dictclass=XmlDictObject):
 ## end of http://code.activestate.com/recipes/573463/ }}}
 
 
-class XFormToDict:
-    def __init__(self, root):
-        if isinstance(root, basestring):
-            parser = etree.XMLParser(remove_comments=True)
-            if os.path.exists(root):
-                self._root = etree.parse(root, parser=parser).getroot()
-            else:
-                self._root = etree.fromstring(root, parser)
-            self._dict = ConvertXmlToDict(self._root)
-        elif not isinstance(root, etree._Element):
-            raise TypeError('Expected ElementTree.Element or file path string')
-
-    def get_dict(self):
-        json_str = json.dumps(self._dict)
-        for k in self._root.nsmap:
-            json_str = json_str.replace('{%s}' % self._root.nsmap[k], '')
-        return json.loads(json_str)
-
-
 def create_survey_element_from_xml(xml_file):
     sb = XFormToDictBuilder(xml_file)
     return sb.survey()
@@ -195,12 +175,16 @@ class XFormToDictBuilder:
         'string': 'text'
     }
 
-    def __init__(self, xml_file_or_string):
-        # TODO: File or string...
-        assert os.path.isfile(xml_file_or_string) or isinstance(xml_file_or_string, basestring)
-        
-        doc_as_dict = XFormToDict(xml_file_or_string).get_dict()
-        self._xmldict = doc_as_dict
+    def __init__(self, path=None, filelike_obj=None):
+        if path:
+            assert os.path.isfile(path)
+            with open(path) as f:
+                doc_as_dict= self.get_dict_from_xml(f)
+        elif filelike_obj:
+            doc_as_dict= self.get_dict_from_xml(filelike_obj)
+        else:
+            raise RuntimeError('\'XFormToDictBuilder()\' requires either the '\
+                               + '\'path\' or the \'filelike_obj\' parameter.')
 
         assert 'html' in doc_as_dict
         assert 'body' in doc_as_dict['html']
@@ -249,6 +233,19 @@ class XFormToDictBuilder:
         self._cleanup_bind_list()
         self._cleanup_children()
         self.new_doc[constants.CHILDREN] = self.children
+
+
+    @staticmethod
+    def get_dict_from_xml(xml_file_object):
+        parser = etree.XMLParser(remove_comments=True)
+        xml_root= etree.parse(xml_file_object, parser=parser).getroot()
+        xml_dict= ConvertXmlToDict(xml_root)
+        
+        json_str = json.dumps(xml_dict)
+        for k in xml_root.nsmap:
+            json_str = json_str.replace('{%s}' % xml_root.nsmap[k], '')
+        return json.loads(json_str)
+
 
     def _set_binding_order(self):
         self.ordered_binding_refs = []

@@ -129,9 +129,9 @@ class Test_ImportXForm(unittest.TestCase):
         survey_from_path= survey_from.xform(path=xform_file_path)
         
         with open(xform_file_path) as f:
-            survey_from_file= survey_from.xform(filelike_obj=f)
+            survey_from_file_obj= survey_from.xform(filelike_obj=f)
         
-        self.assertEqual(survey_from_file, survey_from_path)
+        self.assertEqual(survey_from_file_obj, survey_from_path)
 
 
 if __name__ == "__main__":
