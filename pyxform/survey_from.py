@@ -17,11 +17,13 @@ import pyxform.builder
 XFORM_IMPORT_WARNING= 'XForm imports are not fully supported. Please check the correctness of the resulting survey.'
 
 
-def xform(xform_in_path, warnings=None):
+def xform(path=None, filelike_obj=None, warnings=None):
     '''
     Construct a 'Survey' object from an XML XForm.
     
-    :param str xform_in_path: Path to the input file.
+    :param str path: Optional path to the input file.
+    :param filelike_obj: Optional file-like object from which to import the survey.
+    :type filelike_obj: file or StringIO.StringIO or other type supported by lxml.etree.parse().
     :param list warnings: Optional list into which any warnings generated during import will be appended.
     :rtype: pyxform.survey.Survey
     '''
@@ -30,29 +32,31 @@ def xform(xform_in_path, warnings=None):
         warnings.append(XFORM_IMPORT_WARNING)
     
     # TODO: Implement warnings in 'XFormToDictBuilder' for un/partially-supported form elements.
-    survey= pyxform.xform2json.XFormToDictBuilder(xform_in_path).survey()
+    survey= pyxform.xform2json.XFormToDictBuilder(path=path, filelike_obj=filelike_obj).survey()
     return survey
 
 
-def xls(xls_in_path, warnings=None):
+def xls(path=None, filelike_obj=None, warnings=None):
     '''
     Construct a 'Survey' object from an XLS-formatted XLSForm.
     
-    :param str xls_in_path: Path to the input file.
+    :param str path: Path to the input file.
+    :param filelike_obj: Optional file-like object from which to import the survey.
+    :type filelike_obj: file or StringIO.StringIO or other type supported by lxml.etree.parse().
     :param list warnings: Optional list into which any warnings generated during import will be appended.
     :rtype: pyxform.survey.Survey
     '''
     
     # TODO: Import XLSForms directly to 'Survey' objects.
     # Convert the XLS to JSON then import the JSON ...such a kludge.
-    workbook_dict= pyxform.xls2json_backends.xls_to_dict(xls_in_path)
+    workbook_dict= pyxform.xls2json_backends.xls_to_dict(path)
     json_temp= pyxform.xls2json.workbook_to_json(workbook_dict, warnings=warnings)
     survey= pyxform.builder.create_survey_element_from_dict(json_temp)
     
     return survey
 
 
-def csv(csv_in_path, warnings=None):
+def csv(path=None, filey_obj=None, warnings=None):
     '''
     Construct a 'Survey' object from an CSV-formatted XLSForm.
     
@@ -63,7 +67,7 @@ def csv(csv_in_path, warnings=None):
 
     # TODO: Import XLSForms directly to 'Survey' objects.
     # Convert the CSV to JSON then import the JSON ...such a kludge.
-    workbook_dict= pyxform.xls2json_backends.csv_to_dict(csv_in_path)
+    workbook_dict= pyxform.xls2json_backends.csv_to_dict(path)
     json_temp= pyxform.xls2json.workbook_to_json(workbook_dict, warnings=warnings)
     survey= pyxform.builder.create_survey_element_from_dict(json_temp)
 

@@ -12,7 +12,7 @@ Tests importing of XForms. XForm importing is also tested in
 import unittest
 import os.path
 
-from pyxform import xform2json
+from pyxform import survey_from
 
 
 class Test_ImportXForm(unittest.TestCase):
@@ -24,10 +24,10 @@ class Test_ImportXForm(unittest.TestCase):
         correctly.
         '''
         
-        xml_in_path= os.path.join(self.test_directory_path,\
+        xform_file_path= os.path.join(self.test_directory_path,\
                                   'example_xforms/single_select_one_survey.xml')
         
-        survey= xform2json.XFormToDictBuilder(xml_in_path).survey()
+        survey= survey_from.xform(xform_file_path)
         self.assertEqual(survey['title'], 'Single "select one" survey')
         self.assertEqual(survey['name'], 'single_select_one_survey')
         
@@ -53,10 +53,10 @@ class Test_ImportXForm(unittest.TestCase):
         correctly.
         '''
         
-        xml_in_path= os.path.join(self.test_directory_path,\
+        xform_file_path= os.path.join(self.test_directory_path,\
                                   'example_xforms/single_select_many_survey.xml')
         
-        survey= xform2json.XFormToDictBuilder(xml_in_path).survey()
+        survey= survey_from.xform(xform_file_path)
         self.assertEqual(survey['title'], 'Single "Select Many" Survey')
         self.assertEqual(survey['name'], 'single_select_many_survey')
         
@@ -82,10 +82,10 @@ class Test_ImportXForm(unittest.TestCase):
         imported correctly.
         '''
         
-        xml_in_path= os.path.join(self.test_directory_path,\
+        xform_file_path= os.path.join(self.test_directory_path,\
                             'example_xforms/multiple_select_question_survey.xml')
         
-        survey= xform2json.XFormToDictBuilder(xml_in_path).survey()
+        survey= survey_from.xform(xform_file_path)
         self.assertEqual(survey['title'], 'Multiple "Select" Question Survey.')
         self.assertEqual(survey['name'], 'multiple_select_question_survey')
         
@@ -115,6 +115,23 @@ class Test_ImportXForm(unittest.TestCase):
         for o_num, o in enumerate(options, 1):
             self.assertEqual(o['label'], 'Option {}'.format(o_num))
             self.assertEqual(o['name'], 'option_{}'.format(o_num))
+
+
+    def test_import_from_file_obj(self):
+        '''
+        Test the interface for importing XForms from an already-opened file 
+        object.
+        '''
+        
+        xform_file_path= os.path.join(self.test_directory_path, \
+          'example_xforms/all_question_types_survey_kf1.xml')
+        
+        survey_from_path= survey_from.xform(path=xform_file_path)
+        
+        with open(xform_file_path) as f:
+            survey_from_file= survey_from.xform(filelike_obj=f)
+        
+        self.assertEqual(survey_from_file, survey_from_path)
 
 
 if __name__ == "__main__":
