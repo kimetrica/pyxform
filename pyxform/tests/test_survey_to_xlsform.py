@@ -8,7 +8,7 @@
 
 import unittest
 import os.path
-import tempfile
+from tempfile import NamedTemporaryFile
 
 from pyxform import survey_from
 from pyxform import constants
@@ -41,7 +41,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         :rtype: pyxform.survey.Survey
         '''
         
-        with tempfile.NamedTemporaryFile(suffix='-pyxform.'+ export_format) as xlsform_tempfile:
+        with NamedTemporaryFile(suffix='-pyxform.'+ export_format) as xlsform_tempfile:
             # Export the survey to file and re-import it.
             if export_format.lower() == 'xls':
                 original_survey.to_xls(xlsform_tempfile.name, warnings=warnings)
@@ -54,7 +54,7 @@ class Test_SurveyToXlsForm(unittest.TestCase):
                 reimported_survey= survey_from.xform(xlsform_tempfile, warnings=warnings)
             
             return reimported_survey
-        
+
 
     def test_consistent_export(self):
         '''
@@ -226,6 +226,32 @@ class Test_SurveyToXlsForm(unittest.TestCase):
                 self.assertEqual(question_choices[0]['label'], XlsFormExporter.CASCADING_SELECT_SAD_CHOICE_LABEL)
 
 
+    def test_import_export_file_obj(self):
+        '''
+        Test that XLSForms can be imported from and exported to file objects. 
+        '''
+        
+        xls_survey_path= os.path.join(self.xform_directory_path, '../example_xls/new_cascading_select_xlsform.org.xlsx')
+        xls_survey_from_path= survey_from.xls(path=xls_survey_path)
+        xls_survey_from_file_obj= survey_from.xls(filelike_obj=open(xls_survey_path))
+        self.assertEqual(xls_survey_from_path, xls_survey_from_file_obj)
+
+        csv_temp_file= NamedTemporaryFile(suffix='-pyxform.csv')
+        xls_survey_from_path.to_csv(path=csv_temp_file.name)
+        csv_survey_from_path= survey_from.csv(path=csv_temp_file.name)
+        csv_survey_from_file_obj= survey_from.csv(filelike_obj=open(csv_temp_file.name))
+        self.assertEqual(csv_survey_from_path, csv_survey_from_file_obj)
+        
+        # TODO: Pending modifications in 'Survey.to_X'
+#         xls_filelike_obj= xls_survey_from_path.to_xls()
+#         xls_survey_reimport= survey_from.xls(filelike_obj=xls_filelike_obj)
+#         self.assertEqual(xls_survey_from_path, xls_survey_reimport)
+#         
+#         csv_filelike_obj= csv_survey_from_path.to_xls()
+#         csv_survey_reimport= survey_from.csv(filelike_obj=csv_filelike_obj)
+#         self.assertEqual(csv_survey_from_path, csv_survey_reimport)
+
+                                          
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

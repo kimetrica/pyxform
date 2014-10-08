@@ -12,6 +12,8 @@ as methods on 'Survey' objects.
 import base64
 import re
 import os
+import cStringIO
+from tempfile import NamedTemporaryFile
 
 import pandas
 
@@ -236,31 +238,42 @@ class XlsFormExporter():
         return labels
 
 
-def to_xls(survey, out_file_path, warnings=None):
+def to_xls(survey, path=None, warnings=None):
     '''
     Convert the provided survey to a XLS-encoded XForm.
     
     :param pyxform.survey.Survey survey:
-    :param str out_file_path: Filesystem path to the desired output file.
+    :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
     '''
     
     # Organize the data for spreadsheet output.
     sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
     
-    xls_writer= pandas.ExcelWriter(out_file_path, encoding='UTF-8')
+    # Create if a permanent file with a filesystem path isn't desired.
+    temp_file= None
+    if not path:
+        temp_file= NamedTemporaryFile(suffix='-pyxform.xls')
+        path= temp_file.name
+    
+    # Write out the data sheet-by-sheet.
+    xls_writer= pandas.ExcelWriter(path, encoding='UTF-8')
     for sheet_name, df in sheet_dfs.iteritems():
         df.to_excel(xls_writer, sheet_name, index=False)
-         
     xls_writer.save()
+    
+    # If a permanent file wasn't desired, to the beginning of the temp. file and return it.
+    if temp_file:
+        #temp_file.file.seek(0) # Necessary?
+        return temp_file
 
-       
-def to_csv(survey, out_file_path, warnings=None):
+
+def to_csv(survey, path=None, warnings=None):
     '''
     Convert the provided survey to a CSV-formatted XForm.
     
     :param pyxform.survey.Survey survey:
-    :param str out_file_path: Filesystem path to the desired output file.
+    :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
     '''
     
@@ -268,7 +281,7 @@ def to_csv(survey, out_file_path, warnings=None):
     sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
     
     # Reorganize the data into multi-"sheet" CSV form and export.
-    csv_buffer= str()
+    csv_buffer= cStringIO.StringIO()
     for sheet_name, df in sheet_dfs.iteritems():
         # Prepend a row of the column names into the sheet.
         csv_df= pandas.concat([pandas.DataFrame(df.columns.to_series()).T, df])
@@ -277,8 +290,16 @@ def to_csv(survey, out_file_path, warnings=None):
         # Move the 'sheet' column to the front.
         csv_df= csv_df[['sheet']+csv_df.columns.drop('sheet').tolist()]
         
-        csv_buffer+= csv_df.to_csv(header=False, index=False, encoding='UTF-8')
+        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8'))
+    csv_buffer.seek(0)
+    
+    if path:
+        f=open(path,'w')
+        f.write(csv_buffer.read())
+    else:
+        return csv_buffer
 
-    with open(out_file_path,'w') as f:
-        f.write(csv_buffer)
-        
+if __name__ == '__main__':
+    import pyxform.survey_from
+    open('/home/esmail/all_question_types_survey_kf1.csv','w').write(to_csv(pyxform.survey_from.xform('/home/esmail/programming/pyxform/pyxform/tests/example_xforms/all_question_types_survey_kf1.xml')).read())
+#     open('/home/esmail/test.xls','w').write(to_xls(pyxform.survey_from.xform('/home/esmail/programming/pyxform/pyxform/tests/example_xforms/all_question_types_survey_kf1.xml')).read())
