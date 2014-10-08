@@ -382,7 +382,7 @@ class Survey(Section):
             return result, not result == xml_text
         return text, False
 
-    def print_xform_to_file(self, path="", validate=True, warnings=None):
+    def print_xform_to_file(self, path=None, validate=True, warnings=None):
         """
         Print the xForm to a file and optionally validate it as well by throwing exceptions
         and adding warnings to the warnings array.
@@ -397,10 +397,10 @@ class Survey(Section):
         if validate:
             warnings.extend(check_xform(path))
 
-    def to_xml(self, validate=True, pretty=True):
+    def to_xml(self, validate=True, warnings=None):
         with tempfile.NamedTemporaryFile() as tmp:
             # this will throw an exception if the xml is not valid
-            self.print_xform_to_file(tmp.name)
+            self.print_xform_to_file(tmp.name, validate=validate, warnings=warnings)
         return self._to_pretty_xml()
 
     def instantiate(self):
@@ -411,34 +411,43 @@ class Survey(Section):
         return SurveyInstance(self)
 
 
-    def to_xform(self, out_file_path, warnings=None):
+    def to_xform(self, path=None, warnings=None):
         '''
         Convert the survey to a XML XForm.
         
-        :param str out_file_path: Filesystem path to the desired output file.
+        :param str path: Optional filesystem path to the desired output file.
         :param list warnings: Optional list into which any warnings generated during export will be appended.
+        :returns: ...
+        :rtype: ...
         '''
         
-        self.print_xform_to_file(out_file_path, warnings=warnings)
+        if path:
+            self.print_xform_to_file(path, warnings=warnings)
+        else:
+            return self.to_xml(warnings=warnings)
 
 
-    def to_xls(self, out_file_path, warnings=None):
+    def to_xls(self, path=None, warnings=None):
         '''
         Convert the survey to a XLS-encoded XForm.
         
-        :param str out_file_path: Filesystem path to the desired output file.
+        :param str path: Optional filesystem path to the desired output file.
         :param list warnings: Optional list into which any warnings generated during export will be appended.
+        :returns: ...
+        :rtype: ...
         '''
         
-        pyxform.survey_to_xlsform.to_xls(self, out_file_path, warnings=warnings)
+        return pyxform.survey_to_xlsform.to_xls(self, path, warnings=warnings)
 
 
-    def to_csv(self, out_file_path, warnings=None):
+    def to_csv(self, path=None, warnings=None):
         '''
         Convert the survey to a CSV-formatted XForm.
         
-        :param str out_file_path: Filesystem path to the desired output file.
+        :param str path: Optional filesystem path to the desired output file.
         :param list warnings: Optional list into which any warnings generated during export will be appended.
+        :returns: ...
+        :rtype: ...
         '''
         
-        pyxform.survey_to_xlsform.to_csv(self, out_file_path, warnings=warnings)
+        return pyxform.survey_to_xlsform.to_csv(self, path, warnings=warnings)

@@ -245,6 +245,8 @@ def to_xls(survey, path=None, warnings=None):
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
+    :returns: ...
+    :rtype: ...
     '''
     
     # Organize the data for spreadsheet output.
@@ -262,10 +264,9 @@ def to_xls(survey, path=None, warnings=None):
         df.to_excel(xls_writer, sheet_name, index=False)
     xls_writer.save()
     
-    # If a permanent file wasn't desired, to the beginning of the temp. file and return it.
+    # If a permanent file wasn't desired, return a file-like object with the exported contents.
     if temp_file:
-        #temp_file.file.seek(0) # Necessary?
-        return temp_file
+        return cStringIO.StringIO(temp_file.file.read())
 
 
 def to_csv(survey, path=None, warnings=None):
@@ -275,6 +276,8 @@ def to_csv(survey, path=None, warnings=None):
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
+    :returns: ...
+    :rtype: ...
     '''
     
     # Organize the data for spreadsheet output.
@@ -298,8 +301,3 @@ def to_csv(survey, path=None, warnings=None):
         f.write(csv_buffer.read())
     else:
         return csv_buffer
-
-if __name__ == '__main__':
-    import pyxform.survey_from
-    open('/home/esmail/all_question_types_survey_kf1.csv','w').write(to_csv(pyxform.survey_from.xform('/home/esmail/programming/pyxform/pyxform/tests/example_xforms/all_question_types_survey_kf1.xml')).read())
-#     open('/home/esmail/test.xls','w').write(to_xls(pyxform.survey_from.xform('/home/esmail/programming/pyxform/pyxform/tests/example_xforms/all_question_types_survey_kf1.xml')).read())

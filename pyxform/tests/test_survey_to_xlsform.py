@@ -243,15 +243,15 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         self.assertEqual(csv_survey_from_path, csv_survey_from_file_obj)
         
         # TODO: Pending modifications in 'Survey.to_X'
-#         xls_filelike_obj= xls_survey_from_path.to_xls()
-#         xls_survey_reimport= survey_from.xls(filelike_obj=xls_filelike_obj)
-#         self.assertEqual(xls_survey_from_path, xls_survey_reimport)
-#         
-#         csv_filelike_obj= csv_survey_from_path.to_xls()
-#         csv_survey_reimport= survey_from.csv(filelike_obj=csv_filelike_obj)
-#         self.assertEqual(csv_survey_from_path, csv_survey_reimport)
+        xls_filelike_obj= xls_survey_from_path.to_xls()
+        xls_survey_reimport= survey_from.xls(filelike_obj=xls_filelike_obj)
+        self.assertDictEqual(xls_survey_from_path, xls_survey_reimport)
+        
+        csv_filelike_obj= csv_survey_from_path.to_csv()
+        csv_survey_reimport= survey_from.csv(filelike_obj=csv_filelike_obj)
+        self.assertEqual(csv_survey_from_path, csv_survey_reimport)
 
-                                          
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
