@@ -117,21 +117,40 @@ class Test_ImportXForm(unittest.TestCase):
             self.assertEqual(o['name'], 'option_{}'.format(o_num))
 
 
-    def test_import_from_file_obj(self):
+    def test_import_export_filelike_obj(self):
         '''
-        Test the interface for importing XForms from an already-opened file 
-        object.
+        Test that XForms can be imported from and exported to file-like objects. 
         '''
         
-        xform_file_path= os.path.join(self.test_directory_path, \
+        survey_path= os.path.join(self.test_directory_path, \
           'example_xforms/all_question_types_survey_kf1.xml')
         
-        survey_from_path= survey_from.xform(path=xform_file_path)
+        survey_from_path= survey_from.xform(survey_path)
         
-        with open(xform_file_path) as f:
+        with open(survey_path) as f:
             survey_from_file_obj= survey_from.xform(filelike_obj=f)
         
         self.assertEqual(survey_from_file_obj, survey_from_path)
+        
+        survey_filelike_obj= survey_from_path.to_xform()
+        survey_reimport= survey_from.xform(filelike_obj=survey_filelike_obj)
+        # FIXME: Though these surveys generate identical output 'Survey.__eq__' does not recognize them as equal. 
+#         self.assertEqual(survey_from_path, survey_reimport)
+        self.assertMultiLineEqual(survey_from_path.to_xform().read(), survey_reimport.to_xform().read())
+
+
+    def test_xform_import_warning(self):
+        '''
+        Test that the expected warning is generated when doing experimental 
+        XForm imports.
+        '''
+        
+        survey_path= os.path.join(self.test_directory_path, \
+          'example_xforms/all_question_types_survey_kf1.xml')
+        warnings= list()
+        survey_from.xform(survey_path, warnings=warnings)
+        
+        self.assertIn(survey_from.XFORM_IMPORT_WARNING, warnings)
 
 
 if __name__ == "__main__":
