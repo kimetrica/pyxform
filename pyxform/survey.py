@@ -14,6 +14,7 @@ from odk_validate import check_xform
 from survey_element import SurveyElement
 from errors import PyXFormError
 from pyxform import constants
+import cStringIO
 
 
 nsmap = {
@@ -417,24 +418,20 @@ class Survey(Section):
         
         :param str path: Optional filesystem path to the desired output file.
         :param list warnings: Optional list into which any warnings generated during export will be appended.
-        :returns: ...
-        :rtype: ...
+        :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
+        :rtype: NoneType or 'cStringIO.StringIO'
         '''
         
         if path:
             self.print_xform_to_file(path, warnings=warnings)
         else:
-            return self.to_xml(warnings=warnings)
+            return cStringIO.StringIO(self.to_xml(warnings=warnings))
 
 
     def to_xls(self, path=None, warnings=None):
         '''
-        Convert the survey to a XLS-encoded XForm.
-        
-        :param str path: Optional filesystem path to the desired output file.
-        :param list warnings: Optional list into which any warnings generated during export will be appended.
-        :returns: ...
-        :rtype: ...
+        Wrapper around 'pyxform.survey_to_xlsform.to_xls'; see that function for 
+        documentation.
         '''
         
         return pyxform.survey_to_xlsform.to_xls(self, path, warnings=warnings)
@@ -442,12 +439,8 @@ class Survey(Section):
 
     def to_csv(self, path=None, warnings=None):
         '''
-        Convert the survey to a CSV-formatted XForm.
-        
-        :param str path: Optional filesystem path to the desired output file.
-        :param list warnings: Optional list into which any warnings generated during export will be appended.
-        :returns: ...
-        :rtype: ...
+        Wrapper around 'pyxform.survey_to_xlsform.to_csv'; see that function for 
+        documentation.
         '''
         
         return pyxform.survey_to_xlsform.to_csv(self, path, warnings=warnings)
