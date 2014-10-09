@@ -296,7 +296,7 @@ def to_csv(survey, path=None, warnings=None):
         # Move the 'sheet' column to the front.
         csv_df= csv_df[['sheet']+csv_df.columns.drop('sheet').tolist()]
         
-        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8'))
+        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8', escapechar='\\'))
     csv_buffer.seek(0)
     
     if path:
