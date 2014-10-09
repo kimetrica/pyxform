@@ -245,14 +245,14 @@ def to_xls(survey, path=None, warnings=None):
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
-    :returns: ...
-    :rtype: ...
+    :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
+    :rtype: NoneType or 'cStringIO.StringIO'
     '''
     
     # Organize the data for spreadsheet output.
     sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
     
-    # Create if a permanent file with a filesystem path isn't desired.
+    # 'pandas.ExcelWriter' operates on file paths, so if the 'path' parameter was omitted, create a temp. file.
     temp_file= None
     if not path:
         temp_file= NamedTemporaryFile(suffix='-pyxform.xls')
@@ -264,7 +264,7 @@ def to_xls(survey, path=None, warnings=None):
         df.to_excel(xls_writer, sheet_name, index=False)
     xls_writer.save()
     
-    # If a permanent file wasn't desired, return a file-like object with the exported contents.
+    # If a file wasn't desired, return a file-like object with the exported contents.
     if temp_file:
         return cStringIO.StringIO(temp_file.file.read())
 
@@ -276,15 +276,18 @@ def to_csv(survey, path=None, warnings=None):
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
-    :returns: ...
-    :rtype: ...
+    :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
+    :rtype: NoneType or 'cStringIO.StringIO'
     '''
     
     # Organize the data for spreadsheet output.
     sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
     
     # Reorganize the data into multi-"sheet" CSV form and export.
-    csv_buffer= cStringIO.StringIO()
+    if path:
+        csv_buffer= open(path, 'w')
+    else:
+        csv_buffer= cStringIO.StringIO()
     for sheet_name, df in sheet_dfs.iteritems():
         # Prepend a row of the column names into the sheet.
         csv_df= pandas.concat([pandas.DataFrame(df.columns.to_series()).T, df])
@@ -297,7 +300,6 @@ def to_csv(survey, path=None, warnings=None):
     csv_buffer.seek(0)
     
     if path:
-        f=open(path,'w')
-        f.write(csv_buffer.read())
+        csv_buffer.close()
     else:
         return csv_buffer
