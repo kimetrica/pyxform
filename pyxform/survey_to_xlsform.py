@@ -13,6 +13,7 @@ import base64
 import re
 import os
 import cStringIO
+import json
 from tempfile import NamedTemporaryFile
 
 import pandas
@@ -240,7 +241,7 @@ class XlsFormExporter():
 
 def to_xls(survey, path=None, warnings=None):
     '''
-    Convert the provided survey to a XLS-encoded XForm.
+    Convert the provided survey to a XLS-encoded XLSForm.
     
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
@@ -271,7 +272,7 @@ def to_xls(survey, path=None, warnings=None):
 
 def to_csv(survey, path=None, warnings=None):
     '''
-    Convert the provided survey to a CSV-formatted XForm.
+    Convert the provided survey to a CSV-formatted XLSForm.
     
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
@@ -303,3 +304,39 @@ def to_csv(survey, path=None, warnings=None):
         csv_buffer.close()
     else:
         return csv_buffer
+
+
+def to_ssjson(survey, path=None, warnings=None):
+    '''
+    Convert the provided survey to a (non-standard) JSON-formatted XLSForm.
+    
+    :param pyxform.survey.Survey survey:
+    :param str path: Optional filesystem path to the desired output file.
+    :param list warnings: Optional list into which any warnings generated during export will be appended.
+    :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
+    :rtype: NoneType or 'cStringIO.StringIO'
+    '''
+    
+    # Organize the data for spreadsheet output.
+    sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
+    
+    # Reorganize the data into multi-"sheet" JSON form and export.
+    sheets_dict = {}
+    for sheet_name, df in sheet_dfs.iteritems():
+        rows_list= list()
+        # Insert the column names as the first row.
+        header_row = (pandas.DataFrame(df.columns.to_series()).T).irow(0).tolist()
+        rows_list.append(header_row)
+        
+        # Append in the data rows.
+        for _, data_row in df.iterrows():
+            rows_list.append(data_row.tolist())
+            
+        sheets_dict[sheet_name] = rows_list
+    json_string= json.dumps(sheets_dict, indent=4)
+
+    if path:
+        with open(path, 'w') as f:
+            f.write(json_string)
+    else:
+        return cStringIO.StringIO(json_string)

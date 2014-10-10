@@ -444,3 +444,12 @@ class Survey(Section):
         '''
         
         return pyxform.survey_to_xlsform.to_csv(self, path, warnings=warnings)
+
+
+    def to_ssjson(self, path=None, warnings=None):
+        '''
+        Wrapper around 'pyxform.survey_to_xlsform.to_ssjson'; see that function for 
+        documentation.
+        '''
+        
+        return pyxform.survey_to_xlsform.to_ssjson(self, path, warnings=warnings)
