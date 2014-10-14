@@ -13,6 +13,7 @@ import base64
 import re
 import os
 import cStringIO
+import csv
 import json
 from tempfile import NamedTemporaryFile
 
@@ -297,7 +298,7 @@ def to_csv(survey, path=None, warnings=None):
         # Move the 'sheet' column to the front.
         csv_df= csv_df[['sheet']+csv_df.columns.drop('sheet').tolist()]
         
-        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8', escapechar='\\'))
+        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8', quotechar='"', doublequote=False, escapechar='\\', delimiter=',', quoting=csv.QUOTE_ALL))
     csv_buffer.seek(0)
     
     if path:
@@ -321,7 +322,7 @@ def to_ssjson(survey, path=None, warnings=None):
     sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
     
     # Reorganize the data into multi-"sheet" JSON form and export.
-    sheets_dict = {}
+    sheets_list = list()
     for sheet_name, df in sheet_dfs.iteritems():
         rows_list= list()
         # Insert the column names as the first row.
@@ -332,8 +333,8 @@ def to_ssjson(survey, path=None, warnings=None):
         for _, data_row in df.iterrows():
             rows_list.append(data_row.tolist())
             
-        sheets_dict[sheet_name] = rows_list
-    json_string= json.dumps(sheets_dict, indent=4)
+        sheets_list.append( [sheet_name, rows_list] )
+    json_string= json.dumps(sheets_list, indent=4)
 
     if path:
         with open(path, 'w') as f:
