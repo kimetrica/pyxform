@@ -18,5 +18,6 @@ setup(
     install_requires=[
         'xlrd==0.8.0',
         'lxml==2.3.4',
+        'pandas'
     ],
 )
