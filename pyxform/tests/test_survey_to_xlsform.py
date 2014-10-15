@@ -5,13 +5,14 @@
 .. codeauthor:: Esmail Fadae <esmail.fadae@kobotoolbox.org>
 '''
 
+from __future__ import absolute_import
 
 import unittest
 import os.path
 from tempfile import NamedTemporaryFile
 
-from pyxform import survey_from
-from pyxform import constants
+from .. import survey_from
+from .. import constants
 
 
 class Test_SurveyToXlsForm(unittest.TestCase):

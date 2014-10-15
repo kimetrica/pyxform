@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import os
 import re
 import json
@@ -8,9 +10,15 @@ from operator import itemgetter
 from lxml import etree
 from lxml.etree import ElementTree
 
-import pyxform.aliases
-from pyxform import constants
-from pyxform import builder
+from . import aliases
+from . import constants
+from . import builder
+from .errors import PyXFormError
+
+
+XFORM_IMPORT_WARNING= 'XForm imports are not fully supported. Please check the correctness of the resulting survey.'
+NONCONFORMANCE_WARNING= 'This XForm is not conformant to the new standard. Please refer to the specification at http://opendatakit.github.io/odk-xform-spec/'
+
 
 ## {{{ http://code.activestate.com/recipes/573463/ (r7)
 class XmlDictObject(dict):
@@ -175,7 +183,7 @@ class XFormToDictBuilder:
         'string': 'text'
     }
 
-    def __init__(self, path=None, filelike_obj=None):
+    def __init__(self, path=None, filelike_obj=None, warnings=None):
         if path:
             assert os.path.isfile(path)
             with open(path) as f:
@@ -185,6 +193,13 @@ class XFormToDictBuilder:
         else:
             raise RuntimeError('\'XFormToDictBuilder()\' requires either the '\
                                + '\'path\' or the \'filelike_obj\' parameter.')
+        
+        # TODO: Implement warnings for partially/un-supported form elements.
+        if isinstance(warnings, list):
+            self.warnings= warnings
+        else:
+            self.warnings= list()
+        self.warnings.append(XFORM_IMPORT_WARNING)
 
         assert 'html' in doc_as_dict
         assert 'body' in doc_as_dict['html']
@@ -426,6 +441,37 @@ class XFormToDictBuilder:
         if obj.get(constants.ITEMSET_XFORM):
             question[constants.ITEMSET_XFORM]= obj[constants.ITEMSET_XFORM]
         
+        # Warn if the question type isn't conformant to the XForm spec.
+        # TODO: Calculations?
+        if (element_tag != constants.GROUP) \
+          and (element_tag not in constants.XFORM_TYPE_BODY_ELEMENTS) \
+          and (question.get(constants.TYPE) not in constants.XFORM_TYPES):
+            # Not an XForm type.
+            
+            # Try to get the dealiased question type from the XML element tag.
+            dealiased_tag= None
+            try:
+                dealiased_tag= aliases.get_xform_question_type(element_tag)
+            except PyXFormError:
+                pass
+            
+            if dealiased_tag in constants.XFORM_TYPE_BODY_ELEMENTS:
+                original_type= element_tag
+                dealiased_type= dealiased_tag
+            else:
+                # If the type was not in the element tag, it must be in the "type" attribute.
+                original_type= question.get(constants.TYPE)
+                dealiased_type= aliases.get_xform_question_type(question[constants.TYPE])
+            
+            # Include warnings only once.
+            if NONCONFORMANCE_WARNING not in self.warnings:
+                self.warnings.append(NONCONFORMANCE_WARNING)
+            
+            deprecated_type_warning= \
+              'Use of question type "{}" in XForms is deprecated. Please use "{}" instead.'.format(original_type, dealiased_type)
+            if deprecated_type_warning not in self.warnings:
+                self.warnings.append(deprecated_type_warning)
+        
         # Record the question type.
         if question.get('type', '').startswith('xsd:'):
             # When encountering types prefixed with 'xsd:', remove the prefix \
@@ -462,16 +508,16 @@ class XFormToDictBuilder:
             else:
                 # A question group that is not repeated (?).
                 question['children'] = self._get_children_questions(obj)
-        if element_tag == 'trigger':
-            question_type = 'acknowledge'
+        if element_tag == constants.TRIGGER_XFORM:
+            question_type = constants.TRIGGER_XLSFORM
         if question_type == 'geopoint' and 'hint' in question:
             del question['hint']
         
         # Denote multiple choice questions as prescribed by xlsform.org.
-        if (question_type in pyxform.aliases.multiple_choice):
-            if  pyxform.aliases.multiple_choice[question_type] == constants.SELECT_ONE:
+        if (question_type in aliases.multiple_choice):
+            if  aliases.multiple_choice[question_type] == constants.SELECT_ONE:
                 question_type= constants.SELECT_ONE_XLSFORM
-            elif pyxform.aliases.multiple_choice[question_type] == constants.SELECT_ALL_THAT_APPLY:
+            elif aliases.multiple_choice[question_type] == constants.SELECT_ALL_THAT_APPLY:
                 question_type= constants.SELECT_ALL_THAT_APPLY_XLSFORM
         
         if question_type:

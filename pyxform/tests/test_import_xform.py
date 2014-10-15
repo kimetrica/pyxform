@@ -9,10 +9,13 @@ Tests importing of XForms. XForm importing is also tested in
 '''
 
 
+from __future__ import absolute_import
+
 import unittest
 import os.path
 
-from pyxform import survey_from
+from .. import survey_from
+from .. import xform2json
 
 
 class Test_ImportXForm(unittest.TestCase):
@@ -141,7 +144,7 @@ class Test_ImportXForm(unittest.TestCase):
 
     def test_xform_import_warning(self):
         '''
-        Test that the expected warning is generated when doing experimental 
+        Test that expected warnings are generated when doing experimental 
         XForm imports.
         '''
         
@@ -150,7 +153,8 @@ class Test_ImportXForm(unittest.TestCase):
         warnings= list()
         survey_from.xform(survey_path, warnings=warnings)
         
-        self.assertIn(survey_from.XFORM_IMPORT_WARNING, warnings)
+        self.assertIn(xform2json.XFORM_IMPORT_WARNING, warnings)
+        self.assertIn(xform2json.NONCONFORMANCE_WARNING, warnings)
 
 
 if __name__ == "__main__":

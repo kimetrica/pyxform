@@ -14,9 +14,6 @@ import pyxform.xls2json
 import pyxform.builder
 
 
-XFORM_IMPORT_WARNING= 'XForm imports are not fully supported. Please check the correctness of the resulting survey.'
-
-
 def xform(path=None, filelike_obj=None, warnings=None):
     '''
     Construct a 'Survey' object from an XML XForm.
@@ -27,12 +24,8 @@ def xform(path=None, filelike_obj=None, warnings=None):
     :param list warnings: Optional list into which any warnings generated during import will be appended.
     :rtype: pyxform.survey.Survey
     '''
-
-    if isinstance(warnings, list):
-        warnings.append(XFORM_IMPORT_WARNING)
     
-    # TODO: Implement warnings in 'XFormToDictBuilder' for un/partially-supported form elements.
-    survey= pyxform.xform2json.XFormToDictBuilder(path=path, filelike_obj=filelike_obj).survey()
+    survey= pyxform.xform2json.XFormToDictBuilder(path=path, filelike_obj=filelike_obj, warnings=warnings).survey()
     return survey
 
 

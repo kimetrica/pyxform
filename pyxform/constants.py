@@ -161,6 +161,9 @@ REPEAT = u"repeat"
 XFORM_BODY_ELEMENTS= {INPUT_XFORM, SELECT_ONE_XFORM, SELECT_ALL_THAT_APPLY_XFORM, \
   UPLOAD_XFORM, TRIGGER_XFORM, GROUP, REPEAT}
 
+# Special body element types that are also question types (?).
+XFORM_TYPE_BODY_ELEMENTS= {SELECT_ONE_XFORM, SELECT_ALL_THAT_APPLY_XFORM, TRIGGER_XFORM}
+
 
 # XForm body sub-elements: http://opendatakit.github.io/odk-xform-spec/#body-elements
 HINT = u"hint"

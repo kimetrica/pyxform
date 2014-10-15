@@ -158,29 +158,35 @@ def get_xform_question_type(original_question_type_str):
     
     xform_question_type_str= None
     
-    if original_question_type_str in select1:
-        xform_question_type_str= SELECT_ONE_XFORM
-    elif original_question_type_str in select:
-        xform_question_type_str= SELECT_ALL_THAT_APPLY_XFORM
-    elif original_question_type_str in XFORM_TYPES:
-        # The question type is already valid for use in an XForm.
-        xform_question_type_str= original_question_type_str
+    # Strip off the "xsd:" prefix, if present.
+    if original_question_type_str.startswith('xsd:'):
+        question_type_str= original_question_type_str.split('xsd:')[-1]
+    else:
+        question_type_str= original_question_type_str
     
-    elif original_question_type_str in XLSFORM_TO_XFORM_TYPES:
+    if question_type_str in select1:
+        xform_question_type_str= SELECT_ONE_XFORM
+    elif question_type_str in select:
+        xform_question_type_str= SELECT_ALL_THAT_APPLY_XFORM
+    elif question_type_str in XFORM_TYPES:
+        # The question type is already valid for use in an XForm.
+        xform_question_type_str= question_type_str
+    
+    elif question_type_str in XLSFORM_TO_XFORM_TYPES:
         # The question type is an XLSForm type with a known XLSForm equivalent.
-        xform_question_type_str= XLSFORM_TO_XFORM_TYPES[original_question_type_str]
+        xform_question_type_str= XLSFORM_TO_XFORM_TYPES[question_type_str]
 
-    elif original_question_type_str in QUESTION_TYPE_DICT:
+    elif question_type_str in QUESTION_TYPE_DICT:
         # The question type is a known type possibly with an XForm equivalent.
         possible_xform_question_type= \
-          QUESTION_TYPE_DICT[original_question_type_str][BIND][TYPE]
+          QUESTION_TYPE_DICT[question_type_str][BIND][TYPE]
         if possible_xform_question_type in XFORM_TYPES:
             xform_question_type_str= possible_xform_question_type
-    elif original_question_type_str == GROUP:
-        xform_question_type_str= original_question_type_str
+    elif question_type_str == GROUP:
+        xform_question_type_str= question_type_str
 
     if not xform_question_type_str:
-        raise PyXFormError('Unexpected XForm type "{}".'.format(original_question_type_str))
+        raise PyXFormError('Unexpected XForm type "{}".'.format(question_type_str))
     
     return xform_question_type_str
 
