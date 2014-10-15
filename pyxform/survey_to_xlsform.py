@@ -27,6 +27,9 @@ from . import constants
 from .errors import PyXFormError
 
 
+GROUP_EXPORT_WARNING= 'Exporting groups to XLSForms is currently an experimental feature.'
+
+
 class XlsFormExporter():
     
     CASCADING_SELECT_WARNING= u'Cascading-select (choice filter) questions not currently supported. Question choices for any such questions have not been imported.'
@@ -141,6 +144,9 @@ class XlsFormExporter():
 
         if xlsform_question_type == constants.CALCULATE_XLSFORM:
             survey_row['calculation']= question[constants.BIND][constants.CALCULATE_XLSFORM]
+            
+        if (constants.BIND in question) and (constants.REQUIRED_XFORM in question[constants.BIND]):
+            survey_row[constants.REQUIRED_XFORM]=  question[constants.BIND][constants.REQUIRED_XFORM]
 
         # Add the row into the 'survey' sheet.
         self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([survey_row])])
@@ -175,6 +181,9 @@ class XlsFormExporter():
         
         :param pyxform.section.GroupedSection grouped_section:
         '''
+        
+        if GROUP_EXPORT_WARNING not in self.warnings:
+            self.warnings.append(GROUP_EXPORT_WARNING)
         
         # Record the question group and return.
         

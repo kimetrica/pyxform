@@ -5,6 +5,7 @@
 .. codeauthor:: Esmail Fadae <esmail.fadae@kobotoolbox.org>
 '''
 
+
 from __future__ import absolute_import
 
 import unittest
@@ -13,6 +14,8 @@ from tempfile import NamedTemporaryFile
 
 from .. import survey_from
 from .. import constants
+from ..section import GroupedSection
+from pyxform import xform2json, survey_to_xlsform
 
 
 class Test_SurveyToXlsForm(unittest.TestCase):
@@ -257,6 +260,34 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         csv_filelike_obj= csv_survey_from_path.to_csv()
         csv_survey_reimport= survey_from.csv(filelike_obj=csv_filelike_obj)
         self.assertEqual(csv_survey_from_path, csv_survey_reimport)
+
+
+    def test_export_group(self):
+        '''
+        Test that groups can be exported to XLSForms.
+        '''
+        
+        warnings= list()
+        survey_path= os.path.join(self.xform_directory_path, 'Simple_group_form.xml')
+        
+        survey_csv_stringio= survey_from.xform(survey_path).to_csv(warnings=warnings)
+        survey_csv_reimported= survey_from.csv(filelike_obj=survey_csv_stringio)
+        
+        # Ensure that the user is warned about the experimental nature of exporting groups.
+        self.assertIn(survey_to_xlsform.GROUP_EXPORT_WARNING, warnings)
+        
+        # Ensure that the expected group is present and recognized as the correct type.
+        expected_group_name= 'group_bt9cr48'
+        for child in survey_csv_reimported.children:
+            if child['name'] == expected_group_name:
+                self.assertTrue(isinstance(child, GroupedSection))
+                break
+        else:
+            raise RuntimeError('Group "{}" not found in reimported CSV survey.'.format(expected_group_name))
+        
+        # Ensure that the reimported CSV correlates to the original XForm.
+        with open(survey_path) as original_survey_file:
+            self.assertMultiLineEqual(original_survey_file.read(), survey_csv_reimported.to_xform().read())
 
 
 if __name__ == "__main__":
