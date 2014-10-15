@@ -9,6 +9,8 @@ as methods on 'Survey' objects.
 '''
 
 
+from __future__ import absolute_import
+
 import base64
 import re
 import os
@@ -21,8 +23,8 @@ import pandas
 
 import pyxform.question
 import pyxform.aliases
-from pyxform import constants
-from pyxform.errors import PyXFormError
+from . import constants
+from .errors import PyXFormError
 
 
 class XlsFormExporter():
@@ -271,13 +273,14 @@ def to_xls(survey, path=None, warnings=None):
         return cStringIO.StringIO(temp_file.file.read())
 
 
-def to_csv(survey, path=None, warnings=None):
+def to_csv(survey, path=None, warnings=None, koboform=False):
     '''
     Convert the provided survey to a CSV-formatted XLSForm.
     
     :param pyxform.survey.Survey survey:
     :param str path: Optional filesystem path to the desired output file.
     :param list warnings: Optional list into which any warnings generated during export will be appended.
+    :param bool koboform: Optional flag to specially format the output for KoBoForm.
     :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
     :rtype: NoneType or 'cStringIO.StringIO'
     '''
@@ -298,7 +301,13 @@ def to_csv(survey, path=None, warnings=None):
         # Move the 'sheet' column to the front.
         csv_df= csv_df[['sheet']+csv_df.columns.drop('sheet').tolist()]
         
-        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8', quotechar='"', doublequote=False, escapechar='\\', delimiter=',', quoting=csv.QUOTE_ALL))
+        if koboform:
+            csv_options= {'quotechar':'"', 'doublequote':False, 'escapechar':'\\', \
+                          'delimiter':',', 'quoting':csv.QUOTE_ALL}
+        else:
+            csv_options= dict()
+        
+        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8', **csv_options))
     csv_buffer.seek(0)
     
     if path:
