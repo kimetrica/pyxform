@@ -8,6 +8,7 @@ import cStringIO
 import constants
 import re
 import datetime
+import collections
 from errors import PyXFormError
 
 
@@ -337,7 +338,7 @@ def csv_to_dict(path_or_file):
     else:
         csv_data = path_or_file.read()
 
-    _dict = {}
+    _dict = collections.OrderedDict()
 
     def first_column_as_sheet_name(row):
         if len(row) == 0:
@@ -355,7 +356,8 @@ def csv_to_dict(path_or_file):
                 content = None
             return (s_or_c, content)
 
-    reader = csv.reader(csv_data.split("\n"))
+    reader = csv.reader(csv_data.split("\n"), \
+                        quotechar='"', doublequote=True, escapechar='\\')
     sheet_name = None
     current_headers = None
     for ascii_row in reader:
@@ -372,7 +374,7 @@ def csv_to_dict(path_or_file):
                 _dict[u"%s_header" % sheet_name] = \
                     _list_to_dict_list(current_headers)
             else:
-                _d = {}
+                _d = collections.OrderedDict()
                 for key, val in zip(current_headers, content):
                     if val != "":
                         #Slight modification so values are striped
