@@ -13,17 +13,6 @@ from xls2json_backends import xls_to_dict, csv_to_dict
 from utils import is_valid_xml_tag
 
 
-label_optional_types = [
-    u"deviceid",
-    u"phonenumber",
-    u"simserial",
-    u"calculate",
-    u"start",
-    u"end",
-    u"today"
-]
-
-
 def print_pyobj_to_json(pyobj, path=None):
     """
     dump a python nested array/dict structure to the specified file
@@ -229,7 +218,7 @@ def add_flat_annotations(prompt_list, parent_relevant = '', name_prefix = ''):
       The flat property is used in the json2xform code
     """
     for prompt in prompt_list:
-        prompt_relevant = prompt.get('bind', {}).get('relevant', '')
+        prompt_relevant = prompt.get(constants.BIND, {}).get('relevant', '')
         new_relevant = ''
         if parent_relevant != '':
             new_relevant += parent_relevant
@@ -242,11 +231,11 @@ def add_flat_annotations(prompt_list, parent_relevant = '', name_prefix = ''):
         if children:
             prompt['flat'] = True
             add_flat_annotations(children, new_relevant,
-                                 name_prefix + '_' + prompt['name'])
+                                 name_prefix + '_' + prompt[constants.NAME])
         else:
             if new_relevant != '':
-                prompt['bind'] = prompt.get('bind', {})
-                prompt['bind']['relevant'] = new_relevant
+                prompt[constants.BIND] = prompt.get(constants.BIND, {})
+                prompt[constants.BIND]['relevant'] = new_relevant
             #if name_prefix != '':
             #    prompt['name'] = name_prefix + prompt['name']
 
@@ -278,7 +267,7 @@ def workbook_to_json(
         survey_headers = workbook_dict.get(survey_header_sheet)
         if not survey_headers:
             raise PyXFormError(u"The survey sheet is missing column headers.")
-        tmp = [h for h in [u'type', u'name'] if h in survey_headers[0].keys()]
+        tmp = [h for h in [constants.TYPE, constants.NAME] if h in survey_headers[0].keys()]
         if tmp.__len__() is not 2:
             raise PyXFormError(u"The survey sheet must have on the first row"
                                u" name and type columns.")
@@ -288,7 +277,7 @@ def workbook_to_json(
         choices_headers = workbook_dict.get(choices_header_sheet)
         if not choices_headers:
             raise PyXFormError(u"The choices sheet is missing column headers.")
-        choices_header_list = [u'list name', u'list_name', u'name']
+        choices_header_list = [u'list name', u'list_name', constants.NAME]
         tmp = [
             h for h in choices_header_list if h in choices_headers[0].keys()]
         if tmp.__len__() is not 2:
@@ -302,7 +291,8 @@ def workbook_to_json(
     rowFormatString = '[row : %s]'
 
     #Make sure the passed in vars are unicode
-    form_name = unicode(form_name)
+    if form_name:
+        form_name = unicode(form_name)
     default_language = unicode(default_language)
 
     #We check for double columns to determine whether to use them
@@ -332,11 +322,13 @@ def workbook_to_json(
 
     #Here we create our json dict root with default settings:
     id_string = settings.get(constants.ID_STRING, form_name)
+    form_name= form_name if form_name else id_string
+    title= settings.get(constants.TITLE, id_string)
     sms_keyword = settings.get(constants.SMS_KEYWORD, id_string)
     json_dict = {
         constants.TYPE: constants.SURVEY,
         constants.NAME: form_name,
-        constants.TITLE: id_string,
+        constants.TITLE: title,
         constants.ID_STRING: id_string,
         constants.SMS_KEYWORD: sms_keyword,
         constants.DEFAULT_LANGUAGE: default_language,
@@ -382,7 +374,7 @@ def workbook_to_json(
     warnedabout = set()
     for list_name, options in choices.items():
         for option in options:
-            if 'name' not in option:
+            if constants.NAME not in option:
                 info = "[list_name : " + list_name + ']'
                 raise PyXFormError("On the choices sheet there is "
                                    "a option with no name. " + info)
@@ -444,7 +436,7 @@ def workbook_to_json(
                                      + '|'.join(aliases.control.keys())
                                      + r"))( (over )?(?P<list_name>\S+))?$")
     select_regexp = re.compile(
-        r"^(?P<select_command>(" + '|'.join(aliases.select.keys())
+        r"^(?P<select_command>(" + '|'.join(aliases.multiple_choice.keys())
         + r")) (?P<list_name>\S+)"
         + "( (?P<specify_other>(or specify other|or_other|or other)))?$")
     cascading_regexp = re.compile(
@@ -484,8 +476,8 @@ def workbook_to_json(
                 " Question with no type.\n" + str(row))
             continue
 
-        if question_type == 'calculate':
-            calculation = row.get('bind', {}).get('calculate')
+        if question_type == constants.CALCULATE_XLSFORM:
+            calculation = row.get(constants.BIND, {}).get(constants.CALCULATE_XLSFORM)
             if not calculation:
                 raise PyXFormError(
                     rowFormatString % row_number + " Missing calculation.")
@@ -502,8 +494,8 @@ def workbook_to_json(
         end_control_parse = end_control_regex.search(question_type)
         if end_control_parse:
             parse_dict = end_control_parse.groupdict()
-            if parse_dict.get("end") and "type" in parse_dict:
-                control_type = aliases.control[parse_dict["type"]]
+            if parse_dict.get("end") and constants.TYPE in parse_dict:
+                control_type = aliases.control[parse_dict[constants.TYPE]]
                 if prev_control_type != control_type or len(stack) == 1:
                     raise PyXFormError(
                         rowFormatString % row_number +
@@ -516,10 +508,10 @@ def workbook_to_json(
 
         #Make sure the row has a valid name
         if not constants.NAME in row:
-            if row['type'] == 'note':
+            if row[constants.TYPE] == 'note':
                 #autogenerate names for notes without them
-                row['name'] = "generated_note_name_" + str(row_number)
-            # elif 'group' in row['type'].lower():
+                row[constants.NAME] = "generated_note_name_" + str(row_number)
+            # elif 'group' in row[constants.TYPE].lower():
             #     # autogenerate names for groups without them
             #     row['name'] = "generated_group_name_" + str(row_number)
             else:
@@ -551,13 +543,13 @@ def workbook_to_json(
         begin_control_parse = begin_control_regex.search(question_type)
         if begin_control_parse:
             parse_dict = begin_control_parse.groupdict()
-            if parse_dict.get("begin") and "type" in parse_dict:
+            if parse_dict.get("begin") and constants.TYPE in parse_dict:
                 #Create a new json dict with children, and the proper type,
                 #and add it to parent_children_array in place of a question.
                 #parent_children_array will then be set to its children array
                 #(so following questions are nested under it)
                 #until an end command is encountered.
-                control_type = aliases.control[parse_dict["type"]]
+                control_type = aliases.control[parse_dict[constants.TYPE]]
                 new_json_dict = row.copy()
                 new_json_dict[constants.TYPE] = control_type
                 child_list = list()
@@ -578,33 +570,33 @@ def workbook_to_json(
                 #Generate a new node for the jr:count column so
                 #xpath expressions can be used.
                 repeat_count_expression = new_json_dict.get(
-                    'control', {}).get('jr:count')
+                    constants.CONTROL, {}).get('jr:count')
                 if repeat_count_expression:
-                    generated_node_name = new_json_dict['name'] + "_count"
+                    generated_node_name = new_json_dict[constants.NAME] + "_count"
                     parent_children_array.append({
-                        "name": generated_node_name,
-                        "bind": {
+                        constants.NAME: generated_node_name,
+                        constants.BIND: {
                             "readonly": "true()",
-                            "calculate": repeat_count_expression,
+                            constants.CALCULATE_XLSFORM: repeat_count_expression,
                         },
-                        "type": "calculate",
+                        constants.TYPE: constants.CALCULATE_XLSFORM,
                     })
-                    new_json_dict['control']['jr:count'] = \
+                    new_json_dict[constants.CONTROL]['jr:count'] = \
                         "${" + generated_node_name + "}"
 
                 #Code to deal with table_list appearance flags
                 # (for groups of selects)
-                ctrl_ap = new_json_dict.get(u"control", {}).get(u"appearance")
+                ctrl_ap = new_json_dict.get(constants.CONTROL, {}).get(u"appearance")
                 if ctrl_ap == constants.TABLE_LIST:
                     table_list = True
-                    new_json_dict[u"control"][u"appearance"] = u"field-list"
+                    new_json_dict[constants.CONTROL][u"appearance"] = u"field-list"
                     #Generate a note label element so hints and labels
                     #work as expected in table-lists.
                     #see https://github.com/modilabs/pyxform/issues/62
                     if 'label' in new_json_dict or 'hint' in new_json_dict:
                         generated_label_element = {
-                            "type": "note",
-                            "name":
+                            constants.TYPE: "note",
+                            constants.NAME:
                             "generated_table_list_label_" + str(row_number)
                         }
                         if 'label' in new_json_dict:
@@ -643,12 +635,12 @@ def workbook_to_json(
                 cascading_json = cascading_choices[0]['questions']
                 json_dict['choices'] = choices
                 include_bindings = False
-                if 'bind' in row:
+                if constants.BIND in row:
                     include_bindings = True
                 for cq in cascading_json:
                     # include bindings
                     if include_bindings:
-                        cq['bind'] = row['bind']
+                        cq[constants.BIND] = row[constants.BIND]
 
                     def replace_prefix(d, prefix):
                         for k, v in d.items():
@@ -669,13 +661,13 @@ def workbook_to_json(
         if select_parse:
             parse_dict = select_parse.groupdict()
             if parse_dict.get("select_command"):
-                select_type = aliases.select[parse_dict["select_command"]]
+                select_type = aliases.multiple_choice[parse_dict["select_command"]]
                 if select_type == 'select one external'\
                    and not 'choice_filter' in row:
                     warnings.append(rowFormatString % row_number +
                         u" select one external is only meant for"
                         u" filtered selects.")
-                    select_type = aliases.select['select_one']
+                    select_type = aliases.multiple_choice[constants.SELECT_ONE_XLSFORM]
                 list_name = parse_dict["list_name"]
 
                 if list_name not in choices\
@@ -683,8 +675,8 @@ def workbook_to_json(
                     if not choices:
                         raise PyXFormError(
                             u"There should be a choices sheet in this xlsform."
-                            u" Please ensure that the choices sheet name is "
-                            u"all in small caps.")
+                            u" Please ensure that the \"choices\" sheet name"
+                            u" is all in lowercase.")
                     raise PyXFormError(
                         rowFormatString % row_number +
                         " List name not in choices sheet: " + list_name)
@@ -736,8 +728,8 @@ def workbook_to_json(
                     if select_type == 'select one external':
                         new_json_dict['query'] = list_name
                     else:
-                        new_json_dict['itemset'] = list_name
-                        json_dict['choices'] = choices
+                        new_json_dict[constants.ITEMSET_XFORM] = list_name
+                        json_dict[constants.CHOICES] = choices
                 else:
                     new_json_dict[constants.CHOICES] = choices[list_name]
 
@@ -766,8 +758,8 @@ def workbook_to_json(
                                          table_list + " vs. " + list_name
                         raise PyXFormError(error_message)
 
-                    control = new_json_dict[u"control"] = \
-                        new_json_dict.get(u"control", {})
+                    control = new_json_dict[constants.CONTROL] = \
+                        new_json_dict.get(constants.CONTROL, {})
                     control[u"appearance"] = "list-nolabel"
                 parent_children_array.append(new_json_dict)
                 if specify_other_question:
@@ -790,40 +782,40 @@ def workbook_to_json(
     meta_children = []
 
     if aliases.yes_no.get(settings.get("omit_instanceID")):
-        if settings.get("public_key"):
+        if settings.get(constants.PUBLIC_KEY):
             raise PyXFormError(
                 "Cannot omit instanceID, it is required for encryption.")
     else:
         #Automatically add an instanceID element:
         meta_children.append({
-            "name": "instanceID",
-            "bind": {
+            constants.NAME: "instanceID",
+            constants.BIND: {
                 "readonly": "true()",
-                "calculate": settings.get(
+                constants.CALCULATE_XLSFORM: settings.get(
                     "instance_id", "concat('uuid:', uuid())"),
             },
-            "type": "calculate",
+            constants.TYPE: constants.CALCULATE_XLSFORM,
         })
 
     if 'instance_name' in settings:
         #Automatically add an instanceName element:
         meta_children.append({
-            "name": "instanceName",
-            "bind": {
-                "calculate": settings['instance_name']
+            constants.NAME: "instanceName",
+            constants.BIND: {
+                constants.CALCULATE_XLSFORM: settings['instance_name']
             },
-            "type": "calculate",
+            constants.TYPE: constants.CALCULATE_XLSFORM,
         })
 
     if len(meta_children) > 0:
         meta_element = \
             {
-                "name": "meta",
-                "type": "group",
-                "control": {
+                constants.NAME: constants.META_XFORM,
+                constants.TYPE: constants.GROUP,
+                constants.CONTROL: {
                     "bodyless": True
                 },
-                "children": meta_children
+                constants.CHILDREN: meta_children
             }
         noop, survey_children_array = stack[0]
         survey_children_array.append(meta_element)
@@ -953,7 +945,7 @@ class QuestionTypesReader(SpreadsheetReader):
         self._dict = self._dict[TYPES_SHEET]
         self._dict = dealias_and_group_headers(
             self._dict, {}, use_double_colons, u"default")
-        self._dict = organize_by_values(self._dict, u"name")
+        self._dict = organize_by_values(self._dict, constants.NAME)
 
 
 #Not used internally (or on formhub)

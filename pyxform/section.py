@@ -1,3 +1,4 @@
+import pyxform.constants
 from question import SurveyElement
 from utils import node
 from errors import PyXFormError
@@ -74,7 +75,7 @@ class RepeatingSection(Section):
         if jrcount:
             survey = self.get_root()
             control_dict['jr:count'] = survey.insert_xpaths(jrcount)
-        repeat_node = node(u"repeat", nodeset=self.get_xpath(), **control_dict)
+        repeat_node = node(pyxform.constants.REPEAT, nodeset=self.get_xpath(), **control_dict)
 
         for n in Section.xml_control(self):
             repeat_node.appendChild(n)
@@ -82,10 +83,10 @@ class RepeatingSection(Section):
         label = self.xml_label()
         if label:
             return node(
-                u"group", self.xml_label(), repeat_node,
+                pyxform.constants.GROUP, self.xml_label(), repeat_node,
                 ref=self.get_xpath()
                 )
-        return node(u"group", repeat_node, ref=self.get_xpath())
+        return node(pyxform.constants.GROUP, repeat_node, ref=self.get_xpath())
 
     #I'm anal about matching function signatures when overriding a function, but there's no reason for kwargs to be an argument
     def xml_instance(self, **kwargs):
@@ -116,23 +117,23 @@ class GroupedSection(Section):
         if not self.get('flat'):
             attrs['ref'] = self.get_xpath()
         
-        if 'label' in self and len(self['label']) > 0:
+        if pyxform.constants.LABEL in self and len(self[pyxform.constants.LABEL]) > 0:
             children.append(self.xml_label())
         for n in Section.xml_control(self):
             children.append(n)
         
-        if u"appearance" in control_dict:
-            attrs['appearance'] = control_dict['appearance']
+        if pyxform.constants.APPEARANCE in control_dict:
+            attrs[pyxform.constants.APPEARANCE] = control_dict[pyxform.constants.APPEARANCE]
 
         if u"intent" in control_dict:
             survey = self.get_root()
             attrs['intent'] = survey.insert_xpaths(control_dict['intent'])
 
-        return node(u"group", *children, **attrs)
+        return node(pyxform.constants.GROUP, *children, **attrs)
 
     def to_json_dict(self):
         # This is quite hacky, might want to think about a smart way
         # to approach this problem.
         result = super(GroupedSection, self).to_json_dict()
-        result[u"type"] = u"group"
+        result[pyxform.constants.TYPE] = pyxform.constants.GROUP
         return result

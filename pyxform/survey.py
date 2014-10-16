@@ -1,16 +1,20 @@
+# Python standard library.
+import re
 import tempfile
-from section import Section
-from question import Question
-from utils import node, XFORM_TAG_REGEXP
-from collections import defaultdict
 import codecs
 from datetime import datetime
-import re
-import os
+from collections import defaultdict
+
+# 'pyxform'-internal.
+import pyxform.survey_to_xlsform
+from section import Section
+from question import Question
+from utils import node
 from odk_validate import check_xform
 from survey_element import SurveyElement
 from errors import PyXFormError
 from pyxform import constants
+import cStringIO
 
 
 nsmap = {
@@ -29,25 +33,26 @@ class Survey(Section):
         {
             u"_xpath": dict,
             u"_created": datetime.now, #This can't be dumped to json
-            u"title": unicode,
-            u"id_string": unicode,
-            u"sms_keyword": unicode,
-            u"sms_separator": unicode,
-            u"sms_allow_media": bool,
-            u"sms_date_format": unicode,
-            u"sms_datetime_format": unicode,
-            u"sms_response": unicode,
+            constants.TITLE: unicode,
+            constants.ID_STRING: unicode,
+            constants.SMS_KEYWORD: unicode,
+            constants.SMS_SEPARATOR: unicode,
+            constants.SMS_ALLOW_MEDIA: bool,
+            constants.SMS_DATE_FORMAT: unicode,
+            constants.SMS_DATETIME_FORMAT: unicode,
+            constants.SMS_RESPONSE: unicode,
             u"file_name": unicode,
-            u"default_language": unicode,
+            constants.DEFAULT_LANGUAGE: unicode,
             u"_translations": dict,
-            u"submission_url": unicode,
-            u"public_key": unicode,
+            constants.SUBMISSION_URL: unicode,
+            constants.PUBLIC_KEY: unicode,
             u"instance_xmlns": unicode,
-            u"version": unicode,
-            u"choices": dict,
-            u"style": unicode
+            constants.VERSION: unicode,
+            constants.CHOICES: dict,
+            constants.STYLE: unicode
         }
     )
+        
 
     def validate(self):
         super(Survey, self).validate()
@@ -110,7 +115,7 @@ class Survey(Section):
         model_children = []
         if self._translations:
             model_children.append(self.itext())
-        model_children += [node("instance", self.xml_instance())]
+        model_children += [node(constants.INSTANCE_XFORM, self.xml_instance())]
         model_children += list(self._generate_static_instances())
         model_children += self.xml_bindings()
 
@@ -122,7 +127,7 @@ class Survey(Section):
                 submission_attrs["base64RsaPublicKey"] = self.public_key
             submission_node = node("submission", method="form-data-post", **submission_attrs)
             model_children.insert(0, submission_node)
-        return node("model",  *model_children)
+        return node(constants.MODEL_XFORM,  *model_children)
 
     def xml_instance(self):
         result = Section.xml_instance(self)
@@ -133,7 +138,7 @@ class Survey(Section):
             result.setAttribute(u"xmlns", self.instance_xmlns)
 
         if self.version:
-            result.setAttribute(u"version", self.version)
+            result.setAttribute(constants.VERSION, self.version)
         return result
 
     def _add_to_nested_dict(self, dicty, path, value):
@@ -378,7 +383,7 @@ class Survey(Section):
             return result, not result == xml_text
         return text, False
 
-    def print_xform_to_file(self, path="", validate=True, warnings=None):
+    def print_xform_to_file(self, path=None, validate=True, warnings=None):
         """
         Print the xForm to a file and optionally validate it as well by throwing exceptions
         and adding warnings to the warnings array.
@@ -393,10 +398,10 @@ class Survey(Section):
         if validate:
             warnings.extend(check_xform(path))
 
-    def to_xml(self, validate=True, pretty=True):
+    def to_xml(self, validate=True, warnings=None):
         with tempfile.NamedTemporaryFile() as tmp:
             # this will throw an exception if the xml is not valid
-            self.print_xform_to_file(tmp.name)
+            self.print_xform_to_file(tmp.name, validate=validate, warnings=warnings)
         return self._to_pretty_xml()
 
     def instantiate(self):
@@ -405,3 +410,46 @@ class Survey(Section):
         """
         from instance import SurveyInstance
         return SurveyInstance(self)
+
+
+    def to_xform(self, path=None, warnings=None):
+        '''
+        Convert the survey to a XML XForm.
+        
+        :param str path: Optional filesystem path to the desired output file.
+        :param list warnings: Optional list into which any warnings generated during export will be appended.
+        :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
+        :rtype: NoneType or 'cStringIO.StringIO'
+        '''
+        
+        if path:
+            self.print_xform_to_file(path, warnings=warnings)
+        else:
+            return cStringIO.StringIO(self.to_xml(warnings=warnings))
+
+
+    def to_xls(self, path=None, warnings=None):
+        '''
+        Wrapper around 'pyxform.survey_to_xlsform.to_xls'; see that function for 
+        documentation.
+        '''
+        
+        return pyxform.survey_to_xlsform.to_xls(self, path, warnings=warnings)
+
+
+    def to_csv(self, path=None, warnings=None, koboform=False):
+        '''
+        Wrapper around 'pyxform.survey_to_xlsform.to_csv'; see that function for 
+        documentation.
+        '''
+        
+        return pyxform.survey_to_xlsform.to_csv(self, path, warnings=warnings, koboform=koboform)
+
+
+    def to_ssjson(self, path=None, warnings=None):
+        '''
+        Wrapper around 'pyxform.survey_to_xlsform.to_ssjson'; see that function for 
+        documentation.
+        '''
+        
+        return pyxform.survey_to_xlsform.to_ssjson(self, path, warnings=warnings)

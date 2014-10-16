@@ -127,7 +127,7 @@ def xls_to_dict(path_or_file):
             # first row value for this column is the key
             col_dict = {}
             col_name = sheet.cell_value(0, column)
-            col_dict["name"] = col_name
+            col_dict[constants.NAME] = col_name
             col_dict["choice_labels"] = []
             col_dict["prev_choice_labels"] = []
             for row in range(1, sheet.nrows):
@@ -170,32 +170,32 @@ def xls_to_dict(path_or_file):
         for index, level in enumerate(result):
             if index == 0:
                 result2.append({'lambda': {
-                    "name": prefix + '_' + level['name'],
+                    constants.NAME: prefix + '_' + level[constants.NAME],
                     "label": level['label'],
                     "children": [
-                        {'name': slugify(x),
+                        {constants.NAME: slugify(x),
                          'label': x} for x in level['choice_labels']],
                     "type": "select one",
                 }})
-                result2.append({"stopper": level['name']})
+                result2.append({"stopper": level[constants.NAME]})
                 continue
             calc_formula_string = "'ERROR'"
             for prev_choice_label in set(level["prev_choice_labels"]):
                 prev_choice_name = slugify(prev_choice_label)
                 my_name = \
-                    prefix + '_' + level["name"] + "_in_" + prev_choice_name
+                    prefix + '_' + level[constants.NAME] + "_in_" + prev_choice_name
                 prev_choice_val = \
-                    "${" + prefix + "_" + result[index - 1]["name"] + "}"
+                    "${" + prefix + "_" + result[index - 1][constants.NAME] + "}"
                 result2.append({'lambda': {
-                    "name": my_name,
+                    constants.NAME: my_name,
                     "label": level["label"],
                     "children": [
-                        {'name': slugify(x), 'label': x}
+                        {constants.NAME: slugify(x), 'label': x}
                         for (x, y) in zip(
                             level["choice_labels"],
                             level["prev_choice_labels"])
                         if y == prev_choice_label],
-                    "bind": {
+                    constants.BIND: {
                         u'relevant':
                         prev_choice_val + "='" + prev_choice_name + "'"},
                     "type": "select one"
@@ -205,10 +205,10 @@ def xls_to_dict(path_or_file):
                     "if(" + prev_choice_val + "='" + prev_choice_name
                     + "', ${" + my_name + "}, 'ERROR')")
             result2.append({'lambda': {
-                "name": prefix + '_' + level["name"],
+                constants.NAME: prefix + '_' + level[constants.NAME],
                 "type": "calculate",
-                "bind": {u'calculate': calc_formula_string}}})
-            result2.append({"stopper": level['name']})
+                constants.BIND: {u'calculate': calc_formula_string}}})
+            result2.append({"stopper": level[constants.NAME]})
         return result2
 
     def _xls_to_dict_cascade_sheet(sheet):
@@ -226,7 +226,7 @@ def xls_to_dict(path_or_file):
                 'data': [],
                 'itemset': col_name,
                 'type': constants.SELECT_ONE,
-                'name':
+                constants.NAME:
                 prefix if (column == sheet.ncols - 1) else u''.join(
                         [prefix, '_', col_name]),
                 'label': sheet.cell_value(1, column)}
@@ -255,10 +255,10 @@ def xls_to_dict(path_or_file):
                 except ValueError:
                     rs_dict[col_name]['data'].append(slugify(cell_data))
                     if 'choices' in rs_dict[col_name]:
-                        l = {'name': slugify(cell_data), 'label': cell_data}
+                        l = {constants.NAME: slugify(cell_data), 'label': cell_data}
                         rs_dict[col_name]['choices'].append(l)
                 data = {
-                    'name': slugify(cell_data),
+                    constants.NAME: slugify(cell_data),
                     'label': cell_data.strip(),
                     constants.LIST_NAME: col_name
                 }
@@ -311,7 +311,7 @@ def get_cascading_json(sheet_list, prefix, level):
         if 'stopper' in row:
             if row['stopper'] == level:
                 # last element's name IS the prefix; doesn't need level
-                return_list[-1]["name"] = prefix
+                return_list[-1][constants.NAME] = prefix
                 return return_list
             else:
                 continue
