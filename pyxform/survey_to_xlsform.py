@@ -174,14 +174,14 @@ class XlsFormExporter():
         :param pyxform.section.GroupedSection grouped_section:
         '''
         
-        if GROUP_EXPORT_WARNING not in self.warnings:
-            self.warnings.append(GROUP_EXPORT_WARNING)
-        
         # Record the question group and return.
         
         if grouped_section[constants.NAME] == constants.META_XFORM:
             # Do not export the 'meta' group as it is automatically added by 'pyxform'.
             return
+        
+        if GROUP_EXPORT_WARNING not in self.warnings:
+            self.warnings.append(GROUP_EXPORT_WARNING)
         
         # Generate and insert the group's header.
         group_header= {constants.TYPE: u'begin group'}
