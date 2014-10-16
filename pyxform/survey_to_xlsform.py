@@ -27,12 +27,12 @@ from . import constants
 from .errors import PyXFormError
 
 
-GROUP_EXPORT_WARNING= 'Exporting groups to XLSForms is currently an experimental feature.'
+GROUP_EXPORT_WARNING= 'Importing XForms with groups is still an experimental feature.'
 
 
 class XlsFormExporter():
     
-    CASCADING_SELECT_WARNING= u'Cascading-select (choice filter) questions not currently supported. Question choices for any such questions have not been imported.'
+    CASCADING_SELECT_WARNING= u'Cascading-select (choice filter) questions not yet supported. Question choices for any such questions have not been imported.'
     CASCADING_SELECT_SAD_CHOICE_NAME= u'question_choices_not_imported'
     CASCADING_SELECT_SAD_CHOICE_LABEL= u'Apologies, your choices for this (cascading-select) question could not be automatically imported.'
     
@@ -306,7 +306,7 @@ def to_csv(survey, path=None, warnings=None, koboform=False):
         # If multiple translations were available, warn the user about one's preferential treatment.
         if len(label_columns) > 1:
             chosen_language= chosen_label_column.split(constants.LABEL+'::')[1]
-            language_default_warning= 'Multiple translations are not supported in KoBoForm. Defaulting to language "{}".'.format(chosen_language)
+            language_default_warning= 'We have imported all your languages, but displaying multiple translations is not yet supported. Defaulting to language "{}".'.format(chosen_language)
             warnings.append(language_default_warning)
         
         # Rename the selected label column to "label" in both the "survey" and "choices" sheets.
