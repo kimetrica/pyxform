@@ -36,7 +36,7 @@ class XlsFormExporter():
     CASCADING_SELECT_SAD_CHOICE_NAME= u'question_choices_not_imported'
     CASCADING_SELECT_SAD_CHOICE_LABEL= u'Apologies, your choices for this (cascading-select) question could not be automatically imported.'
     
-    def __init__(self, survey, warnings=None, label_columns=None):
+    def __init__(self, survey, warnings=None):
         '''
         Prepare a representation of the survey ready to be easily exported as a 
         XLSForm spreadsheet.
@@ -51,12 +51,6 @@ class XlsFormExporter():
         self.choices_sheet_df= pandas.DataFrame()
         self.settings_sheet_df= pandas.DataFrame()
 
-        # Keep track of 'label' columns.
-        if label_columns == None:
-            self.label_columns= set()
-        else:
-            self.label_columns= label_columns
-        
         # Keep track of any warnings generated.
         if warnings is not None:    # Could be an empty list.
             self.warnings= warnings
@@ -142,7 +136,6 @@ class XlsFormExporter():
         # Mandatory 'label' column(s).
         question_labels= self.get_survey_element_label(question)
         survey_row.update(question_labels)
-        self.label_columns.update(question_labels.keys()) # Track any new label columns encountered.
 
         if xlsform_question_type == constants.CALCULATE_XLSFORM:
             survey_row['calculation']= question[constants.BIND][constants.CALCULATE_XLSFORM]
@@ -169,10 +162,7 @@ class XlsFormExporter():
         # Mandatory 'label' column(s).
         choice_labels= self.get_survey_element_label(question_choice)
         choices_row.update(choice_labels)
-        
-        # Track any new label columns (translations like 'label::English') encountered.
-        self.label_columns.update(choice_labels.keys())
-        
+                
         # Add the row into the 'choices' sheet.
         self.choices_sheet_df= pandas.concat([self.choices_sheet_df, pandas.DataFrame.from_dict([choices_row])])
         
@@ -296,21 +286,17 @@ def to_csv(survey, path=None, warnings=None, koboform=False):
     :rtype: NoneType or 'cStringIO.StringIO'
     '''
     
-    if koboform:
-        label_columns= set()
-    else:
-        label_columns= None
-        
     if warnings == None:
         warnings= list()
 
     # Organize the data for spreadsheet output.
-    sheet_dfs= XlsFormExporter(survey, warnings, label_columns).sheet_dfs
+    sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
 
     # If exporting for KoBoForm, ensure there is one "label" column.
-    if koboform and ('label' not in label_columns):
+    if koboform and ('label' not in sheet_dfs[constants.SURVEY].columns):
+        label_columns= [c for c in sheet_dfs[constants.SURVEY].columns if constants.LABEL in c]
         
-        # Since the KoBoForm UI is in English, try that first. 
+        # Since the KoBoForm UI is in English, try using that first. 
         if 'label::English' in label_columns:
             chosen_label_column= 'label::English'
         else:
@@ -323,10 +309,10 @@ def to_csv(survey, path=None, warnings=None, koboform=False):
             language_default_warning= 'Multiple translations are not supported in KoBoForm. Defaulting to language "{}".'.format(chosen_language)
             warnings.append(language_default_warning)
         
-        # Duplicate the selected labels into a new "label" column in the "survey" and "choices" sheets.
-        sheet_dfs[constants.SURVEY][constants.LABEL]= sheet_dfs[constants.SURVEY][chosen_label_column]
+        # Rename the selected label column to "label" in both the "survey" and "choices" sheets.
+        sheet_dfs[constants.SURVEY].rename(columns={chosen_label_column: constants.LABEL}, inplace=True)
         if constants.CHOICES in sheet_dfs:
-            sheet_dfs[constants.CHOICES][constants.LABEL]= sheet_dfs[constants.CHOICES][chosen_label_column]
+            sheet_dfs[constants.CHOICES].rename(columns={chosen_label_column: constants.LABEL}, inplace=True)
             
     
     # Reorganize the data into multi-"sheet" CSV form and export.
@@ -392,3 +378,10 @@ def to_ssjson(survey, path=None, warnings=None):
             f.write(json_string)
     else:
         return cStringIO.StringIO(json_string)
+
+
+if __name__ == '__main__':
+    from pyxform import survey_from
+    warnings= list()
+    survey_from.xform('/home/esmail/programming/pyxform/pyxform/tests/example_xforms/all_question_types_survey_kf1_translations_inserted.xml').to_csv('/home/esmail/all_question_types_survey_kf1_translations_inserted.csv', warnings=warnings, koboform=True)
+    
