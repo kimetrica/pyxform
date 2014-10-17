@@ -16,9 +16,11 @@ from . import builder
 from .errors import PyXFormError
 
 
-XFORM_IMPORT_WARNING= 'XForm imports are not fully supported. Please check the correctness of the resulting survey.'
+# XForm import warnings.
 NONCONFORMANCE_WARNING= 'This XForm is not conformant to the standard. Please refer to the specification document at http://opendatakit.github.io/odk-xform-spec/'
 TYPE_DEPRECATION_WARNING_TEMPLATE= 'Use of question type "{}" in XForms is deprecated. Please use "{}" instead.'
+# TODO: Validate XForm importing and remove this.
+XFORM_IMPORT_WARNING= 'XForm imports are not fully supported. Please check the correctness of the resulting survey.'
 
 ## {{{ http://code.activestate.com/recipes/573463/ (r7)
 class XmlDictObject(dict):
@@ -587,7 +589,7 @@ class XFormToDictBuilder:
             original_type= binding_copy[constants.TYPE]
             dealiased_type= aliases.get_xform_question_type(original_type)
             if original_type != dealiased_type:
-                # Complain (once) about non-standard types.
+                # Complain (once) about non-standard types before they are mangled.
                 if NONCONFORMANCE_WARNING not in self.warnings:
                     self.warnings.append(NONCONFORMANCE_WARNING)
                 type_deprecation_warning= TYPE_DEPRECATION_WARNING_TEMPLATE.format(original_type, dealiased_type)

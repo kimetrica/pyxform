@@ -28,6 +28,8 @@ from .errors import PyXFormError
 
 
 GROUP_EXPORT_WARNING= 'Exporting groups to XLSForms is currently an experimental feature.'
+SKIP_LOGIC_EXPORT_WARNING= 'Exporting skip logic in XLSForms is not currently supported.'
+CALCULATION_EXPORT_WARNING= 'Exporting calculations to XLSForms is currently an experimental feature.'
 
 
 class XlsFormExporter():
@@ -137,7 +139,13 @@ class XlsFormExporter():
         question_labels= self.get_survey_element_label(question)
         survey_row.update(question_labels)
 
+        if (constants.BIND in question) and (constants.RELEVANT_XFORM in question[constants.BIND]):
+            if SKIP_LOGIC_EXPORT_WARNING not in self.warnings:
+                self.warnings.append(SKIP_LOGIC_EXPORT_WARNING)
+        
         if xlsform_question_type == constants.CALCULATE_XLSFORM:
+            if CALCULATION_EXPORT_WARNING not in self.warnings:
+                self.warnings.append(SKIP_LOGIC_EXPORT_WARNING)
             survey_row['calculation']= question[constants.BIND][constants.CALCULATE_XLSFORM]
             
         if (constants.BIND in question) and (constants.REQUIRED_XFORM in question[constants.BIND]):
