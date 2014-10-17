@@ -17,7 +17,7 @@ from .errors import PyXFormError
 
 
 XFORM_IMPORT_WARNING= 'This is an experimental feature - importing existing XForms is not fully supported yet.'
-NONCONFORMANCE_WARNING= 'This XForm is not conformant to the <a href="http://opendatakit.github.io/odk-xform-spec/">ODK XForm specification</a>'
+NONCONFORMANCE_WARNING= 'This XForm is not conformant to the ODK XForm specification http://opendatakit.github.io/odk-xform-spec/'
 
 
 ## {{{ http://code.activestate.com/recipes/573463/ (r7)
