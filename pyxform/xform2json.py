@@ -16,9 +16,11 @@ from . import builder
 from .errors import PyXFormError
 
 
+# XForm import warnings.
+NONCONFORMANCE_WARNING= 'This XForm is not conformant to the standard. Please refer to the specification document at http://opendatakit.github.io/odk-xform-spec/'
+TYPE_DEPRECATION_WARNING_TEMPLATE= 'Use of question type "{}" in XForms is deprecated. Please use "{}" instead.'
+# TODO: Validate XForm importing and remove this.
 XFORM_IMPORT_WARNING= 'XForm imports are not fully supported. Please check the correctness of the resulting survey.'
-NONCONFORMANCE_WARNING= 'This XForm is not conformant to the new standard. Please refer to the specification at http://opendatakit.github.io/odk-xform-spec/'
-
 
 ## {{{ http://code.activestate.com/recipes/573463/ (r7)
 class XmlDictObject(dict):
@@ -178,9 +180,9 @@ class XFormToDictBuilder:
     QUESTION_TYPES = {
         constants.SELECT_ALL_THAT_APPLY_XFORM: constants.SELECT_ALL_THAT_APPLY,
         constants.SELECT_ONE_XFORM: constants.SELECT_ONE,
-        'int': 'integer',
-        'dateTime': 'datetime',
-        'string': 'text'
+        constants.INT_XFORM: constants.INT_XLSFORM,
+        constants.DATETIME_XFORM: constants.DATETIME_XFORM,
+        constants.STRING_XFORM: constants.STRING_XFORM
     }
 
     def __init__(self, path=None, filelike_obj=None, warnings=None):
@@ -318,14 +320,14 @@ class XFormToDictBuilder:
         remove_refs(self.children)
 
     def _cleanup_bind_list(self):
-        for item in self._bind_list:
-            ref = item['nodeset']
+        for bndng in self._bind_list:
+            ref = bndng['nodeset']
             name = self._get_name_from_ref(ref)
             parent_ref = ref[:ref.find('/%s' % name)]
             question = self._get_question_params_from_bindings(ref)
             question[constants.NAME] = name
             question['__order'] = self._get_question_order(ref)
-            if 'calculate' in item:
+            if 'calculate' in bndng:
                 question['type'] = 'calculate'
             if ref.split('/').__len__() == 3:
                 # just append on root node, has no group
@@ -346,14 +348,14 @@ class XFormToDictBuilder:
             if 'ref' not in question:
                 new_ref = u'/'.join(ref.split('/')[2:])
                 root_ref = u'/'.join(ref.split('/')[:2])
-                question_or_choice = self._get_item_func(root_ref, new_ref, item)
+                question_or_choice = self._get_item_func(root_ref, new_ref, bndng)
                 if 'type' not in question_or_choice and 'type' in question:
                     question_or_choice.update(question)
                 if question_or_choice['type'] == 'group' and question_or_choice[constants.NAME] == 'meta':
                     question_or_choice['control'] = {'bodyless': True}
                     question_or_choice['__order'] = self._get_question_order(ref)
                 self.children.append(question_or_choice)
-                self._bind_list.append(item)
+                self._bind_list.append(bndng)
                 break
         if self._bind_list:
             self._cleanup_bind_list()
@@ -444,8 +446,7 @@ class XFormToDictBuilder:
         # Warn if the question type isn't conformant to the XForm spec.
         # TODO: Calculations?
         if (element_tag != constants.GROUP) \
-          and (element_tag not in constants.XFORM_TYPE_BODY_ELEMENTS) \
-          and (question.get(constants.TYPE) not in constants.XFORM_TYPES):
+          and (element_tag not in constants.XFORM_TYPE_BODY_ELEMENTS):
             # Not an XForm type.
             
             # Try to get the dealiased question type from the XML element tag.
@@ -458,19 +459,14 @@ class XFormToDictBuilder:
             if dealiased_tag in constants.XFORM_TYPE_BODY_ELEMENTS:
                 original_type= element_tag
                 dealiased_type= dealiased_tag
-            else:
-                # If the type was not in the element tag, it must be in the "type" attribute.
-                original_type= question.get(constants.TYPE)
-                dealiased_type= aliases.get_xform_question_type(question[constants.TYPE])
-            
-            # Include warnings only once.
-            if NONCONFORMANCE_WARNING not in self.warnings:
-                self.warnings.append(NONCONFORMANCE_WARNING)
-            
-            deprecated_type_warning= \
-              'Use of question type "{}" in XForms is deprecated. Please use "{}" instead.'.format(original_type, dealiased_type)
-            if deprecated_type_warning not in self.warnings:
-                self.warnings.append(deprecated_type_warning)
+
+                # Include warnings only once.
+                if NONCONFORMANCE_WARNING not in self.warnings:
+                    self.warnings.append(NONCONFORMANCE_WARNING)
+                
+                type_deprecation_warning= TYPE_DEPRECATION_WARNING_TEMPLATE.format(original_type, dealiased_type)
+                if type_deprecation_warning not in self.warnings:
+                    self.warnings.append(type_deprecation_warning)
         
         # Record the question type.
         if question.get('type', '').startswith('xsd:'):
@@ -539,47 +535,84 @@ class XFormToDictBuilder:
                     children.append(child)
         return children
 
+
     def _get_question_params_from_bindings(self, ref):
-        for item in self.bindings:
-            if item['nodeset'] == ref:
-                try:
-                    self._bind_list.remove(item)
-                except ValueError:
-                    pass
-                rs = {}
-                for k, v in item.iteritems():
-                    if k == 'nodeset':
-                        continue
-                    if k == 'type':
-                        v = self._get_question_type(v)
-                    if k in ['relevant', 'required', 'constraint',
-                             'constraintMsg', 'readonly', 'calculate',
-                             'noAppErrorString', 'requiredMsg']:
-                        if k == 'noAppErrorString':
-                            k = 'jr:noAppErrorString'
-                        if k == 'requiredMsg':
-                            k = 'jr:requiredMsg'
-                        if k == 'constraintMsg':
-                            k = "jr:constraintMsg"
-                            v = self._get_constraintMsg(v)
-                        if k == 'required':
-                            if v == 'true()':
-                                v = 'yes'
-                            elif v == 'false()':
-                                v = 'no'
-                        if k in ['constraint', 'relevant', 'calculate']:
-                            v = self._shorten_xpaths_in_string(v)
-                        if constants.BIND not in rs:
-                            rs[constants.BIND] = {}
-                        rs[constants.BIND][k] = v
-                        continue
-                    rs[k] = v
-                if 'preloadParams' in rs and 'preload' in rs:
-                    rs['type'] = rs['preloadParams']
-                    del rs['preloadParams']
-                    del rs['preload']
-                return rs
-        return None
+        
+        # Locate the binding for this form element.
+        for b in self.bindings:
+            if b[constants.NODESET_XFORM] == ref:
+                associated_binding= b
+                break
+        else:
+            # No associated binding found.
+            return
+        
+        try:
+            self._bind_list.remove(associated_binding)
+        except ValueError:
+            pass
+        
+        # Create a copy of the binding to mutate and record.
+        binding_copy= copy.deepcopy(associated_binding)
+        
+        # Create a sub-binding into which some attributes will be nested (why?).
+        binding_copy[constants.BIND]= binding_copy.get(constants.BIND, {})
+        sub_binding= binding_copy[constants.BIND]
+        
+        # Don't record the "nodeset" attribute.
+        del binding_copy[constants.NODESET_XFORM]
+
+        # Manually nest some attributes within a 'bind' attribute.        
+        # Also manually mangle the XPath values of some of those attributes (why?).
+        # Also manually override the names of some of those attributes (why?).
+        nest_attributes= ['relevant', 'required', 'constraint',
+                     'constraintMsg', 'readonly', 'calculate',
+                    'noAppErrorString', 'requiredMsg']
+        xpath_mangle_attributes= ['constraint', 'relevant', 'calculate']
+        rename_attributes= ['noAppErrorString', 'requiredMsg', 'constraintMsg']
+        for attrbt in nest_attributes:
+            if attrbt in binding_copy:
+                # Remove and nest the attribute.
+                sub_binding[attrbt]= binding_copy.pop(attrbt)
+
+                if attrbt in xpath_mangle_attributes:
+                    # Mangle the attribute's XPath value.
+                    sub_binding[attrbt]= self._shorten_xpaths_in_string(sub_binding[attrbt])
+
+                if attrbt in rename_attributes:
+                    # Remove the attribute and reinsert with 'jr:' prepended to the name.
+                    sub_binding['jr:' + attrbt]= sub_binding.pop(attrbt)                
+
+        # Manually override some attribute values (why?).
+        if constants.TYPE in binding_copy:
+            
+            original_type= binding_copy[constants.TYPE]
+            dealiased_type= aliases.get_xform_question_type(original_type)
+            if original_type != dealiased_type:
+                # Complain (once) about non-standard types before they are mangled.
+                if NONCONFORMANCE_WARNING not in self.warnings:
+                    self.warnings.append(NONCONFORMANCE_WARNING)
+                type_deprecation_warning= TYPE_DEPRECATION_WARNING_TEMPLATE.format(original_type, dealiased_type)
+                if type_deprecation_warning not in self.warnings:
+                    self.warnings.append(type_deprecation_warning)
+                
+            binding_copy[constants.TYPE]= self._get_question_type(original_type)
+
+        if 'preloadParams' in binding_copy and 'preload' in binding_copy:
+            binding_copy['type'] = binding_copy['preloadParams']
+            del binding_copy['preloadParams']
+            del binding_copy['preload']
+
+        if 'jr:constraintMsg' in sub_binding:
+            sub_binding['jr:constraintMsg']= self._get_constraintMsg(sub_binding['jr:constraintMsg'])
+        if constants.REQUIRED_XFORM in sub_binding:
+            if sub_binding[constants.REQUIRED_XFORM] == 'true()':
+                sub_binding[constants.REQUIRED_XFORM] = 'yes'
+            elif sub_binding[constants.REQUIRED_XFORM] == 'false()':
+                sub_binding[constants.REQUIRED_XFORM] = 'no'
+
+        return binding_copy
+
 
     def _get_question_type(self, type):
         if type in self.QUESTION_TYPES.keys():
