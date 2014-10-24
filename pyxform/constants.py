@@ -105,7 +105,7 @@ BARCODE_XLSFORM= BARCODE_XFORM
 
 NOTE_XLSFORM= u'note'
 
-CALCULATE_XLSFORM= CALCULATE_XFORM
+CALCULATE_XLSFORM= u'calculation'
 
 TRIGGER_XLSFORM= u'acknowledge' # Currently undocumented in XLSForm standard (2014/09/25).
 
@@ -137,6 +137,7 @@ XFORM_TO_XLSFORM_TYPES= {
 
 XLSFORM_TO_XFORM_TYPES= {xlsform_type: xform_type for xform_type, xlsform_type in XFORM_TO_XLSFORM_TYPES.iteritems()}
 
+# Metadata types: http://xlsform.org/#metadata
 START_XLSFORM=          u'start'
 END_XLSFORM=            u'end'
 TODAY_XLSFORM=          u'today'
@@ -147,8 +148,6 @@ PHONENUMBER_XLSFORM=    u'phonenumber'
 
 XLSFORM_METADATA_TYPES= {START_XLSFORM, END_XLSFORM, TODAY_XLSFORM, \
   DEVICEID_XLSFORM, SUBSCRIBERID_XLSFORM, SIMSERIAL_XLSFORM, PHONENUMBER_XLSFORM}
-
-#XLSFORM_TO_XLS_TYPES= {xlsform: xform for xform, xlsform in XFORM_TO_XLSFORM_TYPES.iteritems()}
 
 
 # XForm body elements: http://opendatakit.github.io/odk-xform-spec/#body-elements
