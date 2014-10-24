@@ -81,7 +81,7 @@ survey_header = {
     u"constraining message": BIND + u"::jr:constraintMsg",
     u"constraint message": BIND + u"::jr:constraintMsg",
     u"constraint_message": BIND + u"::jr:constraintMsg",
-    u"calculation": BIND + u"::" + CALCULATE_XLSFORM,
+    u"calculation": BIND + u"::" + CALCULATE_XFORM,
     u"command": TYPE,
     u"tag": NAME,
     u"value": NAME,
@@ -140,7 +140,7 @@ label_optional_types = [
     DEVICEID_XLSFORM,
     PHONENUMBER_XLSFORM,
     SIMSERIAL_XLSFORM,
-    CALCULATE_XLSFORM,
+    CALCULATE_XFORM, # Not 'CALCULATE_XLSFORM'?
     START_XLSFORM,
     END_XLSFORM,
     TODAY_XLSFORM,

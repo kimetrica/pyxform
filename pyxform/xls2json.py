@@ -476,8 +476,8 @@ def workbook_to_json(
                 " Question with no type.\n" + str(row))
             continue
 
-        if question_type == constants.CALCULATE_XLSFORM:
-            calculation = row.get(constants.BIND, {}).get(constants.CALCULATE_XLSFORM)
+        if question_type == constants.CALCULATE_XFORM:
+            calculation = row.get(constants.BIND, {}).get(constants.CALCULATE_XFORM)
             if not calculation:
                 raise PyXFormError(
                     rowFormatString % row_number + " Missing calculation.")
@@ -577,9 +577,9 @@ def workbook_to_json(
                         constants.NAME: generated_node_name,
                         constants.BIND: {
                             "readonly": "true()",
-                            constants.CALCULATE_XLSFORM: repeat_count_expression,
+                            constants.CALCULATE_XFORM: repeat_count_expression,
                         },
-                        constants.TYPE: constants.CALCULATE_XLSFORM,
+                        constants.TYPE: constants.CALCULATE_XFORM,
                     })
                     new_json_dict[constants.CONTROL]['jr:count'] = \
                         "${" + generated_node_name + "}"
@@ -791,10 +791,10 @@ def workbook_to_json(
             constants.NAME: "instanceID",
             constants.BIND: {
                 "readonly": "true()",
-                constants.CALCULATE_XLSFORM: settings.get(
+                constants.CALCULATE_XFORM: settings.get(
                     "instance_id", "concat('uuid:', uuid())"),
             },
-            constants.TYPE: constants.CALCULATE_XLSFORM,
+            constants.TYPE: constants.CALCULATE_XFORM,
         })
 
     if 'instance_name' in settings:
@@ -802,9 +802,9 @@ def workbook_to_json(
         meta_children.append({
             constants.NAME: "instanceName",
             constants.BIND: {
-                constants.CALCULATE_XLSFORM: settings['instance_name']
+                constants.CALCULATE_XFORM: settings['instance_name']
             },
-            constants.TYPE: constants.CALCULATE_XLSFORM,
+            constants.TYPE: constants.CALCULATE_XFORM,
         })
 
     if len(meta_children) > 0:
@@ -817,7 +817,7 @@ def workbook_to_json(
                 },
                 constants.CHILDREN: meta_children
             }
-        noop, survey_children_array = stack[0]
+        _, survey_children_array = stack[0]
         survey_children_array.append(meta_element)
 
     #print_pyobj_to_json(json_dict)
@@ -831,10 +831,10 @@ def parse_file_to_workbook_dict(path, file_object=None):
     workbook_dicts are organized as follows:
     {sheetname : [{column_header : column_value_in_array_indexed_row}]}
     """
-    (filepath, filename) = os.path.split(path)
+    (_, filename) = os.path.split(path)
     if not filename:
         raise PyXFormError("No filename.")
-    (shortname, extension) = os.path.splitext(filename)
+    (_, extension) = os.path.splitext(filename)
     if not extension:
         raise PyXFormError("No extension.")
 

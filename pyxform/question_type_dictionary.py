@@ -371,9 +371,9 @@ QUESTION_TYPE_DICT = \
     
     "start time":   _START_TYPE,
     
-    CALCULATE_XLSFORM:                        _NONINPUT_STING_TYPE,
-    "q " + CALCULATE_XLSFORM:                 _NONINPUT_STING_TYPE,
-    "add " + CALCULATE_XLSFORM + " prompt":   _NONINPUT_STING_TYPE, 
+    CALCULATE_XFORM:                        _NONINPUT_STING_TYPE,
+    "q " + CALCULATE_XFORM:                 _NONINPUT_STING_TYPE,
+    "add " + CALCULATE_XFORM + " prompt":   _NONINPUT_STING_TYPE, 
     "hidden":                                           _NONINPUT_STING_TYPE,
     
     "username": _USERNAME_TYPE, 
