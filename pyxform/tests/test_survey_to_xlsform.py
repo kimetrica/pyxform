@@ -15,7 +15,7 @@ from tempfile import NamedTemporaryFile
 from .. import survey_from
 from .. import constants
 from ..section import GroupedSection
-from pyxform import xform2json, survey_to_xlsform
+from pyxform import survey_to_xlsform
 
 
 class Test_SurveyToXlsForm(unittest.TestCase):

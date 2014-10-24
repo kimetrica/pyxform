@@ -16,10 +16,9 @@ import re
 import os
 import cStringIO
 import csv
-import json
-from tempfile import NamedTemporaryFile
+#import json    # Used by 'to_ssjson()'
 
-import pandas
+import xlwt
 
 import pyxform.question
 import pyxform.aliases
@@ -41,39 +40,52 @@ class XlsFormExporter():
     def __init__(self, survey, warnings=None):
         '''
         Prepare a representation of the survey ready to be easily exported as a 
-        XLSForm spreadsheet.
+        XLS or CSV XLSForm.
 
         :param pyxform.survey.Survey survey: The survey to be exported.
         :param list warnings: Optional list into which any warnings generated during export will be appended.
         '''
         
-        # TODO: Repeats, 'or_other', hints, constraints, ...
+        # TODO: Support repeats, 'or_other', hints, constraints, ...
         
-        self.survey_sheet_df= pandas.DataFrame()
-        self.choices_sheet_df= pandas.DataFrame()
-        self.settings_sheet_df= pandas.DataFrame()
+        # TODO: Ideally would want a data structure that preserves order while providing O(1) lookups. Ordered set? (http://stackoverflow.com/q/1653970)
+        # Pre-populate with mandatory columns where possible (i.e. not label(s)).
+        self.survey_sheet_columns= [constants.NAME, constants.TYPE]
+        self.choices_sheet_columns= [constants.LIST_NAME, constants.NAME]
+        self.settings_sheet_columns= list()
 
+        self.survey_sheet_rows= [self.survey_sheet_columns]
+        self.choices_sheet_rows= [self.choices_sheet_columns]
+        self.settings_sheet_rows= [self.settings_sheet_columns]
+        
         # Keep track of any warnings generated.
-        if warnings is not None:    # Could be an empty list.
+        if warnings != None:    # Directly test for 'None' since empty iterables are also "falsy".
             self.warnings= warnings
         else:
             self.warnings= list()
         
         self.record_settings(survey)
         
-        for survey_child in survey['children']:
-            if isinstance(survey_child, pyxform.question.Question):
-                self.record_question_data(survey_child)
-            elif isinstance(survey_child, pyxform.section.GroupedSection):
-                self.record_grouped_section(survey_child)
-            else:
-                raise PyXFormError('Unexpected survey child type "{}".'.format(type(survey_child)))
+        self.record_question_container(survey)
         
-        self.sheet_dfs= {
-          constants.SURVEY:     self.survey_sheet_df,
-          constants.CHOICES:    self.choices_sheet_df,
-          constants.SETTINGS:   self.settings_sheet_df,
-        }
+        # Store the non-empty sheets.
+        self.sheet_dict= dict()
+        if len(self.survey_sheet_rows) > 1:
+            self.sheet_dict[constants.SURVEY]= self.survey_sheet_rows
+        if len(self.choices_sheet_rows) > 1:
+            self.sheet_dict[constants.CHOICES]= self.choices_sheet_rows
+        if len(self.settings_sheet_rows) > 1:
+            self.sheet_dict[constants.SETTINGS]= self.settings_sheet_rows
+
+
+    def record_question_container(self, question_container):
+        for child_element in question_container['children']:
+            if isinstance(child_element, pyxform.question.Question):
+                self.record_question_data(child_element)
+            elif isinstance(child_element, pyxform.section.GroupedSection):
+                self.record_grouped_section(child_element)
+            else:
+                raise PyXFormError('Unexpected survey child type "{}".'.format(type(child_element)))
 
 
     def record_question_data(self, question):
@@ -83,76 +95,97 @@ class XlsFormExporter():
         
         :param pyxform.question.Question question:
         '''
-        
-        # Buffer the question's eventual additions to the 'survey' sheet.
-        survey_row= dict()
-        
+
+        # Create a list with an initially empty entry for each column in the sheet.
+        survey_row= [''] * len(self.survey_sheet_columns)
+
+        # Record the entry for the mandatory 'name' column.
         question_name= question[constants.NAME]
+        survey_row[self.survey_sheet_columns.index(constants.NAME)]= question_name
+
+        # Record the entry for the mandatory 'type' column.
         xlsform_question_type= pyxform.aliases.get_xlsform_question_type(question[constants.TYPE])
-        
-        if isinstance(question, pyxform.question.MultipleChoiceQuestion):
+        if not isinstance(question, pyxform.question.MultipleChoiceQuestion):
+            survey_row[self.survey_sheet_columns.index(constants.TYPE)]= xlsform_question_type
+        else:
             # Special handling for select-type questions.
-            
+
             # Check that the reported 'type' matches the object type.
             if xlsform_question_type not in \
               [constants.SELECT_ONE_XLSFORM, constants.SELECT_ALL_THAT_APPLY_XLSFORM]:
                 raise PyXFormError('Unexpected multiple-choice question type "{}"'.format(question['type']))
-            
-            
+
             # TODO: Would be nice to reuse the 'list name' when encountering reused sets of choices.
             # Generate a 'list name' comprised of the question name followed by 8 random bytes cast to string.
             list_name= question_name + '_' + base64.urlsafe_b64encode(os.urandom(8))
-            
+
             # Strip out any non-alphanumeric characters so KoBoForm can import. \
             #   Decreasing the space of possible strings, while an egregious \
             #   affront, should be safe.
             list_name= re.compile('[\W_]+').sub('_', list_name)
-            
-            survey_row[constants.TYPE]= xlsform_question_type + ' ' + list_name
-            
+
+            survey_row[self.survey_sheet_columns.index(constants.TYPE)]= xlsform_question_type + ' ' + list_name
+
             # TODO: Handle cascading-select questions (http://opendatakit.github.io/odk-xform-spec/#secondary-instances).
-            # If the question appears to be a cascading-select, report in the \
+            # If the question appears to be a cascading-select, report in the
             #   output that the question choices could not be gathered.
             if question.is_cascading_select():
-                manual_sad_choice_row= \
-                  {constants.LIST_NAME: list_name,
-                   constants.NAME: self.CASCADING_SELECT_SAD_CHOICE_NAME,
-                   constants.LABEL: self.CASCADING_SELECT_SAD_CHOICE_LABEL
-                   }
-                self.choices_sheet_df= pandas.concat([self.choices_sheet_df, pandas.DataFrame.from_dict([manual_sad_choice_row])])
+                # Deferring documentation to 'record_question_choice()'...
+                cascading_select_sad_choices_row= [''] * len(self.choices_sheet_columns)
+                dict_to_insert= {constants.LIST_NAME: list_name, constants.NAME: self.CASCADING_SELECT_SAD_CHOICE_NAME}
+                self.insert_dict_into_row(dict_to_insert, cascading_select_sad_choices_row, self.choices_sheet_columns)
+                
+                # FIXME: Unsafe assumption that the "choices" sheet should have a "label" column.
+                if constants.LABEL in self.choices_sheet_columns:
+                    cascading_select_sad_choices_row[self.choices_sheet_columns.index(constants.LABEL)]= self.CASCADING_SELECT_SAD_CHOICE_LABEL
+                else:
+                    self.choices_sheet_columns.append(constants.LABEL)
+                    cascading_select_sad_choices_row.append(self.CASCADING_SELECT_SAD_CHOICE_LABEL)
+                self.choices_sheet_rows.append(cascading_select_sad_choices_row)
+                
                 if self.CASCADING_SELECT_WARNING not in self.warnings:
                     self.warnings.append(self.CASCADING_SELECT_WARNING)
-                
+
             else:
                 # Extract and record the choices.
                 for question_choice in question[constants.CHILDREN]:
                     self.record_question_choice(question_choice, list_name)
-            
-        # Non-select questions
-        else:
-            survey_row[constants.TYPE]= xlsform_question_type
 
-        # Mandatory column 'name'.
-        survey_row[constants.NAME]= question_name
-        
-        # Mandatory 'label' column(s).
-        question_labels= self.get_survey_element_label(question)
-        survey_row.update(question_labels)
+        # Record entries for the mandatory 'label' and/or 'label::X' columns.
+        question_label_dict= self.get_survey_element_label(question)
+        if (not question_label_dict) and (xlsform_question_type not in constants.XLSFORM_METADATA_TYPES):
+            raise PyXFormError('Non-metadata questions must have at least one label.')
+        self.insert_dict_into_row(question_label_dict, survey_row, self.survey_sheet_columns)
 
+        # TODO: Support constraints/skip logic.
         if (constants.BIND in question) and (constants.RELEVANT_XFORM in question[constants.BIND]):
             if SKIP_LOGIC_EXPORT_WARNING not in self.warnings:
                 self.warnings.append(SKIP_LOGIC_EXPORT_WARNING)
-        
-        if xlsform_question_type == constants.CALCULATE_XLSFORM:
+
+        if xlsform_question_type == constants.CALCULATE_XFORM:
             if CALCULATION_EXPORT_WARNING not in self.warnings:
                 self.warnings.append(SKIP_LOGIC_EXPORT_WARNING)
-            survey_row['calculation']= question[constants.BIND][constants.CALCULATE_XLSFORM]
-            
+            dict_to_insert= {constants.CALCULATE_XLSFORM: question[constants.BIND][constants.CALCULATE_XFORM]}
+            self.insert_dict_into_row(dict_to_insert, survey_row, self.survey_sheet_columns)
+
         if (constants.BIND in question) and (constants.REQUIRED_XFORM in question[constants.BIND]):
-            survey_row[constants.REQUIRED_XFORM]=  question[constants.BIND][constants.REQUIRED_XFORM]
+            dict_to_insert= {constants.REQUIRED_XFORM: question[constants.BIND][constants.REQUIRED_XFORM]}
+            self.insert_dict_into_row(dict_to_insert, survey_row, self.survey_sheet_columns)
 
         # Add the row into the 'survey' sheet.
-        self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([survey_row])])
+        self.survey_sheet_rows.append(survey_row)
+
+
+    @staticmethod
+    def insert_dict_into_row(dict_to_insert, row, columns):
+
+        for column_name, cell_value in dict_to_insert.iteritems():
+            if column_name in columns:
+                row[columns.index(column_name)]= cell_value
+            else:
+                # A previously unencountered column.
+                columns.append(column_name)
+                row.append(cell_value)
 
 
     def record_question_choice(self, question_choice, list_name):
@@ -163,16 +196,22 @@ class XlsFormExporter():
         :param str list_name: A unique identifier for the set of choices this choice belongs to.
         '''
         
-        # Mandatory column 'list name'.
-        choices_row= {constants.LIST_NAME: list_name}
-        # Mandatory column 'name'.
-        choices_row[constants.NAME]= question_choice[constants.NAME]
-        # Mandatory 'label' column(s).
-        choice_labels= self.get_survey_element_label(question_choice)
-        choices_row.update(choice_labels)
+        # Create a list with an initially empty entry for each column in the sheet.
+        choices_row= [''] * len(self.choices_sheet_columns)
+        
+        # Record the entry for the mandatory 'list name' column.
+        choices_row[self.choices_sheet_columns.index(constants.LIST_NAME)]= list_name
+        # Record the entry for the mandatory 'name' column.
+        choices_row[self.choices_sheet_columns.index(constants.NAME)]= question_choice[constants.NAME]
+        
+        # Record entries for the mandatory 'label' and/or 'label::X' columns.
+        choice_label_dict= self.get_survey_element_label(question_choice)
+        if not choice_label_dict:
+            raise PyXFormError('Choices for multiple-choice questions must have at least one label.')
+        self.insert_dict_into_row(choice_label_dict, choices_row, self.choices_sheet_columns)
                 
         # Add the row into the 'choices' sheet.
-        self.choices_sheet_df= pandas.concat([self.choices_sheet_df, pandas.DataFrame.from_dict([choices_row])])
+        self.choices_sheet_rows.append(choices_row)
         
 
     def record_grouped_section(self, grouped_section):
@@ -181,46 +220,63 @@ class XlsFormExporter():
         
         :param pyxform.section.GroupedSection grouped_section:
         '''
-        
+
         # Record the question group and return.
-        
+
         if grouped_section[constants.NAME] == constants.META_XFORM:
             # Do not export the 'meta' group as it is automatically added by 'pyxform'.
             return
-        
+
+        # Warn early in case of failure.
         if GROUP_EXPORT_WARNING not in self.warnings:
             self.warnings.append(GROUP_EXPORT_WARNING)
-        
-        # Generate and insert the group's header.
-        group_header= {constants.TYPE: u'begin group'}
-        if constants.NAME in grouped_section:
-            group_header[constants.NAME]= grouped_section[constants.NAME]
-        if constants.LABEL in grouped_section:
-            question_labels= self.get_survey_element_label(grouped_section)
-            group_header.update(question_labels)
-        self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([group_header])])
-        
-        # Insert the grouped questions.
-        for question in grouped_section['children']:
-            self.record_question_data(question)
-        
-        # Insert the group's footer.
-        group_footer= {constants.TYPE: u'end group'}
-        self.survey_sheet_df= pandas.concat([self.survey_sheet_df, pandas.DataFrame.from_dict([group_footer])])
 
+        # Generate the group's header.
+        group_header= [''] * len(self.survey_sheet_columns)
+        # Record the entry for the mandatory 'name' column.
+        group_name= grouped_section[constants.NAME]
+        group_header[self.survey_sheet_columns.index(constants.NAME)]= group_name
+        # Record the entry for the mandatory 'type' column.
+        group_header[self.survey_sheet_columns.index(constants.TYPE)]= u'begin group'
+        # Record entries for the mandatory 'label' and/or 'label::X' columns.
+        group_label_dict= self.get_survey_element_label(grouped_section)
+        if not group_label_dict:
+            raise PyXFormError('Question groups must have at least one label.')
+        self.insert_dict_into_row(group_label_dict, group_header, self.survey_sheet_columns)
+
+        # Insert the group header into the "survey" sheet.
+        self.survey_sheet_rows.append(group_header)
+        
+        # Record the grouped questions and/or sub-groups.
+        self.record_question_container(grouped_section)
+
+        # Generate and insert the group's footer.
+        group_footer= [''] * len(self.survey_sheet_columns)
+        # Record the entry for the mandatory 'type' column.
+        group_footer[self.survey_sheet_columns.index(constants.TYPE)]= u'end group'
+        # Additionally record the group name, for clarity.
+        group_footer[self.survey_sheet_columns.index(constants.NAME)]= group_name
+        self.survey_sheet_rows.append(group_footer)
+        
 
     def record_settings(self, survey):
         '''
         Record the information for the 'settings' sheet, if present.
         
-        :param pyxform.survey.Survey:
+        :param pyxform.survey.Survey survey:
         '''
 
         # TODO: More potential settings listed at xlsform.org.
+        
+        settings_row= list()
         if constants.NAME in survey:
-            self.settings_sheet_df['form_id']= [survey[constants.NAME]]
+            self.settings_sheet_columns.append('form_id')
+            settings_row.append(survey[constants.NAME])
         if constants.TITLE in survey:
-            self.settings_sheet_df['form_title']= [survey[constants.TITLE]]
+            self.settings_sheet_columns.append('form_title')
+            settings_row.append(survey[constants.TITLE])
+
+        self.settings_sheet_rows.append(settings_row)
 
 
     @staticmethod
@@ -235,7 +291,7 @@ class XlsFormExporter():
         :return: Spreadsheet data (in rows) keyed by sheet name.
         :rtype: {str: DataFrame}
         '''
-        
+
         labels= dict()
         if isinstance(survey_element.get(constants.LABEL), basestring) \
           and (survey_element[constants.LABEL] != ''):
@@ -247,7 +303,7 @@ class XlsFormExporter():
             for language in survey_element[constants.LABEL].iterkeys():
                 label_column= constants.LABEL + '::' + language
                 labels[label_column]= survey_element[constants.LABEL][language]
-        
+
         return labels
 
 
@@ -263,23 +319,30 @@ def to_xls(survey, path=None, warnings=None):
     '''
     
     # Organize the data for spreadsheet output.
-    sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
+    sheet_dict= XlsFormExporter(survey, warnings).sheet_dict
     
-    # 'pandas.ExcelWriter' operates on file paths, so if the 'path' parameter was omitted, create a temp. file.
-    temp_file= None
-    if not path:
-        temp_file= NamedTemporaryFile(suffix='-pyxform.xls')
-        path= temp_file.name
-    
+    workbook= xlwt.Workbook(encoding='UTF-8')
     # Write out the data sheet-by-sheet.
-    xls_writer= pandas.ExcelWriter(path, encoding='UTF-8')
-    for sheet_name, df in sheet_dfs.iteritems():
-        df.to_excel(xls_writer, sheet_name, index=False)
-    xls_writer.save()
+    for sheet_name, sheet_rows in sheet_dict.iteritems():
+        worksheet= workbook.add_sheet(sheet_name)
+        for i_row, r in enumerate(sheet_rows):
+            # Bold the top row.
+            if i_row == 0:
+                style_kwarg= {'style': xlwt.easyxf('font: bold on')}
+            elif style_kwarg:
+                style_kwarg= dict()
+            # Enter the data.
+            for i_col, cell_data in enumerate(r):
+                worksheet.write(i_row, i_col, cell_data, **style_kwarg)
     
-    # If a file wasn't desired, return a file-like object with the exported contents.
-    if temp_file:
-        return cStringIO.StringIO(temp_file.file.read())
+    if path:
+        with open(path, 'w') as f:
+            workbook.save(f)
+    else:
+        filelike_obj= cStringIO.StringIO()
+        workbook.save(filelike_obj)
+        filelike_obj.seek(0)    # As a courtesy.
+        return filelike_obj
 
 
 def to_csv(survey, path=None, warnings=None, koboform=False):
@@ -294,62 +357,60 @@ def to_csv(survey, path=None, warnings=None, koboform=False):
     :rtype: NoneType or 'cStringIO.StringIO'
     '''
     
-    if warnings == None:
-        warnings= list()
-
     # Organize the data for spreadsheet output.
-    sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
+    sheet_dict= XlsFormExporter(survey, warnings).sheet_dict
 
     # If exporting for KoBoForm, ensure there is one "label" column.
-    if koboform and ('label' not in sheet_dfs[constants.SURVEY].columns):
-        label_columns= [c for c in sheet_dfs[constants.SURVEY].columns if constants.LABEL in c]
-        
+    survey_columns= sheet_dict[constants.SURVEY][0]
+    if koboform and ('label' not in survey_columns):
+        label_columns= [c for c in survey_columns if constants.LABEL in c]
+
         # Since the KoBoForm UI is in English, try using that first. 
         if 'label::English' in label_columns:
             chosen_label_column= 'label::English'
         else:
-            # Otherwise, select a language randomly.
-            chosen_label_column= label_columns.pop()
-        
+            # Otherwise, select a language quasi-randomly.
+            chosen_label_column= label_columns[0]
+
         # If multiple translations were available, warn the user about one's preferential treatment.
-        if len(label_columns) > 1:
+        if (warnings != None) and (len(label_columns) > 1):
             chosen_language= chosen_label_column.split(constants.LABEL+'::')[1]
             language_default_warning= 'Multiple translations are not supported in KoBoForm. Defaulting to language "{}".'.format(chosen_language)
             warnings.append(language_default_warning)
-        
+
         # Rename the selected label column to "label" in both the "survey" and "choices" sheets.
-        sheet_dfs[constants.SURVEY].rename(columns={chosen_label_column: constants.LABEL}, inplace=True)
-        if constants.CHOICES in sheet_dfs:
-            sheet_dfs[constants.CHOICES].rename(columns={chosen_label_column: constants.LABEL}, inplace=True)
-            
-    
+        survey_columns[survey_columns.index(chosen_label_column)]= constants.LABEL
+        if constants.CHOICES in sheet_dict:
+            choices_columns= sheet_dict[constants.CHOICES][0]
+            choices_columns[choices_columns.index(chosen_label_column)]= constants.LABEL
+
     # Reorganize the data into multi-"sheet" CSV form and export.
     if path:
-        csv_buffer= open(path, 'w')
+        filelike_obj= open(path, 'w')
     else:
-        csv_buffer= cStringIO.StringIO()
-    for sheet_name, df in sheet_dfs.iteritems():
-        # Prepend a row of the column names into the sheet.
-        csv_df= pandas.concat([pandas.DataFrame(df.columns.to_series()).T, df])
-        # Insert column for the sheet name into the sheet and put the name in the first row.
-        csv_df= pandas.concat([pandas.DataFrame.from_dict([{'sheet': sheet_name}]), csv_df])
-        # Move the 'sheet' column to the front.
-        csv_df= csv_df[['sheet']+csv_df.columns.drop('sheet').tolist()]
-        
-        if koboform:
-            # KoBoForm-specific CSV formatting options.
-            csv_options= {'quotechar':'"', 'doublequote':False, 'escapechar':'\\', \
-                          'delimiter':',', 'quoting':csv.QUOTE_ALL}
-        else:
-            csv_options= dict()
-        
-        csv_buffer.write(csv_df.to_csv(header=False, index=False, encoding='UTF-8', **csv_options))
-    csv_buffer.seek(0)
+        filelike_obj= cStringIO.StringIO()
+
+    if koboform:
+        # KoBoForm-specific CSV formatting options (copied from github.com/kobotoolbox/dkobo).
+        csv_writer_kwargs= {'quotechar':'"', 'doublequote':False, 'escapechar':'\\', \
+                      'delimiter':',', 'quoting':csv.QUOTE_ALL}
+    else:
+        csv_writer_kwargs= dict()
+    csv_writer= csv.writer(filelike_obj, **csv_writer_kwargs)
     
+    # Write out the data sheet-by-sheet.
+    for sheet_name, sheet_rows in sheet_dict.iteritems():
+        # Prepend in a row containing just the sheet's name.
+        csv_writer.writerow([sheet_name])
+        for row in sheet_rows:
+            # Write out each row of data prepended with an empty cell and ensuring all cells are UTF-8 encoded.
+            csv_writer.writerow([''] + [cell_data.encode('utf-8') for cell_data in row])
+
     if path:
-        csv_buffer.close()
+        filelike_obj.close()
     else:
-        return csv_buffer
+        filelike_obj.seek(0) # As a courtesy.
+        return filelike_obj
 
 
 # TODO: Reactivate pending use in KoBoForm.
@@ -366,11 +427,11 @@ def to_csv(survey, path=None, warnings=None, koboform=False):
 #     '''
 #     
 #     # Organize the data for spreadsheet output.
-#     sheet_dfs= XlsFormExporter(survey, warnings).sheet_dfs
+#     sheet_dict= XlsFormExporter(survey, warnings).sheet_dict
 #     
 #     # Reorganize the data into multi-"sheet" JSON form and export.
 #     sheets_list = list()
-#     for sheet_name, df in sheet_dfs.iteritems():
+#     for sheet_name, df in sheet_dict.iteritems():
 #         rows_list= list()
 #         # Insert the column names as the first row.
 #         header_row = (pandas.DataFrame(df.columns.to_series()).T).irow(0).tolist()
