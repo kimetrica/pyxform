@@ -2,11 +2,11 @@ from pyxform.constants import * # This and 'pyxform.constants' are tightly relat
 from pyxform.question_type_dictionary import QUESTION_TYPE_DICT
 from pyxform.errors import PyXFormError
 
-#Aliases:
-#Ideally aliases should resolve to elements in the json form schema
+# Aliases:
+# Ideally aliases should resolve to elements in the json form schema
 
-#select, control and settings alias keys used for parsing,
-#which is why self mapped keys are necessary.
+# select, control and settings alias keys used for parsing,
+# which is why self mapped keys are necessary.
 
 control = {
     GROUP: GROUP,
@@ -55,8 +55,8 @@ settings_header = {
     SUBMISSION_URL: SUBMISSION_URL
 }
 
-#TODO: Check on bind prefix approach in json.
-#Conversion dictionary from user friendly column names to meaningful values
+# TODO: Check on bind prefix approach in json.
+# Conversion dictionary from user friendly column names to meaningful values
 survey_header = {
     u"Label": LABEL,
     u"Name": NAME,
@@ -97,7 +97,9 @@ survey_header = {
     u"noAppErrorString" : BIND + u"::jr:noAppErrorString",
     u"no_app_error_string" : BIND + u"::jr:noAppErrorString",
     u"requiredMsg" : BIND + u"::jr:requiredMsg",
+    u"required message" : BIND + u"::jr:requiredMsg",
     u"required_message" : BIND + u"::jr:requiredMsg",
+    BODY_XFORM: u"control",
 }
 
 list_header = {
@@ -108,8 +110,7 @@ list_header = {
     AUDIO_XLSFORM: MEDIA + u"::" + AUDIO_XLSFORM,
     VIDEO_XLSFORM: MEDIA + u"::" + VIDEO_XLSFORM,
 }
-
-#Note that most of the type aliasing happens in all.xls
+# Note that most of the type aliasing happens in all.xls
 type = {
     u"imei": DEVICEID_XLSFORM,
     IMAGE_XLSFORM: u"photo",

@@ -35,6 +35,7 @@ class SurveyElement(dict):
         u"intent": unicode,
         u"jr:count" : unicode,
         constants.BIND: dict,
+        constants.INSTANCE_XFORM: dict,
         constants.CONTROL: dict,
         constants.MEDIA: dict,
         # this node will also have a parent and children, like a tree!

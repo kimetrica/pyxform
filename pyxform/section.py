@@ -26,7 +26,14 @@ class Section(SurveyElement):
         """
         Creates an xml representation of the section
         """
-        result = node(self.name, **kwargs)
+        attributes = {}
+        attributes.update(kwargs)
+        attributes.update(self.get(u'instance', {}))
+        survey = self.get_root()
+        # Resolve field references in attributes
+        for key, value in attributes.items():
+            attributes[key] = survey.insert_xpaths(value)
+        result = node(self.name, **attributes)
         for child in self.children:
             if child.get(u"flat"):
                 for grandchild in child.xml_instance_array():
@@ -49,10 +56,12 @@ class Section(SurveyElement):
     def xml_control(self):
         """
         Ideally, we'll have groups up and rolling soon, but for now
-        let's just return a list of controls from all the children of
-        this section.
+        let's just yield controls from all the children of this section
         """
-        return [e.xml_control() for e in self.children if e.xml_control() is not None]
+        for e in self.children:
+            control = e.xml_control()
+            if control is not None:
+                yield control
 
 
 class RepeatingSection(Section):
@@ -71,10 +80,10 @@ class RepeatingSection(Section):
         </group>
         """
         control_dict = self.control.copy()
-        jrcount = control_dict.get('jr:count')
-        if jrcount:
-            survey = self.get_root()
-            control_dict['jr:count'] = survey.insert_xpaths(jrcount)
+        survey = self.get_root()
+        # Resolve field references in attributes
+        for key, value in control_dict.items():
+            control_dict[key] = survey.insert_xpaths(value)
         repeat_node = node(pyxform.constants.REPEAT, nodeset=self.get_xpath(), **control_dict)
 
         for n in Section.xml_control(self):
@@ -86,7 +95,7 @@ class RepeatingSection(Section):
                 pyxform.constants.GROUP, self.xml_label(), repeat_node,
                 ref=self.get_xpath()
                 )
-        return node(pyxform.constants.GROUP, repeat_node, ref=self.get_xpath())
+        return node(pyxform.constants.GROUP, repeat_node, ref=self.get_xpath(), **self.control)
 
     #I'm anal about matching function signatures when overriding a function, but there's no reason for kwargs to be an argument
     def xml_instance(self, **kwargs):
@@ -110,26 +119,32 @@ class GroupedSection(Section):
         
         if control_dict.get("bodyless"):
             return None
-            
         children = []
-        attrs = {}
+        attributes = {}
+        attributes.update(self.control)
+        
+        survey = self.get_root()
+        
+        # Resolve field references in attributes
+        for key, value in attributes.items():
+            attributes[key] = survey.insert_xpaths(value)
         
         if not self.get('flat'):
-            attrs['ref'] = self.get_xpath()
+            attributes['ref'] = self.get_xpath()
         
         if pyxform.constants.LABEL in self and len(self[pyxform.constants.LABEL]) > 0:
             children.append(self.xml_label())
         for n in Section.xml_control(self):
             children.append(n)
-        
+
         if pyxform.constants.APPEARANCE in control_dict:
-            attrs[pyxform.constants.APPEARANCE] = control_dict[pyxform.constants.APPEARANCE]
+            attributes[pyxform.constants.APPEARANCE] = control_dict[pyxform.constants.APPEARANCE]
 
         if u"intent" in control_dict:
             survey = self.get_root()
-            attrs['intent'] = survey.insert_xpaths(control_dict['intent'])
+            attributes['intent'] = survey.insert_xpaths(control_dict['intent'])
 
-        return node(pyxform.constants.GROUP, *children, **attrs)
+        return node(pyxform.constants.GROUP, *children, **attributes)
 
     def to_json_dict(self):
         # This is quite hacky, might want to think about a smart way
