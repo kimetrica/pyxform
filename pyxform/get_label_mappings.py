@@ -41,7 +41,7 @@ def get_label_mappings(survey_in):
                 if isinstance(question_labels, basestring):
                     label_string= question_labels
                     question_label_mappings[question_name]= {constants.DEFAULT_LANGUAGE: label_string}
-                    label_languages.update(constants.DEFAULT_LANGUAGE)
+                    label_languages.update([constants.DEFAULT_LANGUAGE])
                 elif isinstance(question_labels, dict):
                     question_label_mappings[question_name]= question_labels
                     label_languages.update(question_labels.keys())
@@ -60,6 +60,7 @@ def get_label_mappings(survey_in):
                         if isinstance(option_labels, basestring):
                             label_string= option_labels
                             question_options_map[option_name]= {constants.DEFAULT_LANGUAGE: label_string}
+                            label_languages.update([constants.DEFAULT_LANGUAGE])
                         elif isinstance(option_labels, dict):
                             question_options_map[option_name]= option_labels
                             label_languages.update(option_labels.keys())
