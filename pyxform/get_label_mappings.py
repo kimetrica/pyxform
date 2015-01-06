@@ -38,8 +38,15 @@ def get_label_mappings(survey_in):
 
             # Record the question's label(s) and associated language(s), if any.
             if question_labels:
-                question_label_mappings[question_name]= question_labels
-                label_languages.update(question_labels.keys())
+                if isinstance(question_labels, basestring):
+                    label_string= question_labels
+                    question_label_mappings[question_name]= {constants.DEFAULT_LANGUAGE: label_string}
+                    label_languages.update(constants.DEFAULT_LANGUAGE)
+                elif isinstance(question_labels, dict):
+                    question_label_mappings[question_name]= question_labels
+                    label_languages.update(question_labels.keys())
+                else:
+                    raise Exception('Unexpected question label type "{}".'.format(type(question_labels)))
 
             # Get labels associated with multiple-choice questions.
             if isinstance(survey_element, question.MultipleChoiceQuestion):
@@ -50,16 +57,23 @@ def get_label_mappings(survey_in):
                     
                     # Record the option's label(s) and associated language(s), if any.
                     if option_labels:
-                        question_options_map[option_name]= option_labels
-                        label_languages.update(option_labels.keys())
+                        if isinstance(option_labels, basestring):
+                            label_string= option_labels
+                            question_options_map[option_name]= {constants.DEFAULT_LANGUAGE: label_string}
+                        elif isinstance(option_labels, dict):
+                            question_options_map[option_name]= option_labels
+                            label_languages.update(option_labels.keys())
+                        else:
+                            raise Exception('Unexpected option label type "{}".'.format(type(option_labels)))
 
                 if question_options_map:
                     option_label_mappings[question_name]= question_options_map
 
         else:
-            print 'Unexpected survey element type "{}"'.format(type(survey_element))
+            raise Exception('Unexpected survey element type "{}"'.format(type(survey_element)))
 
         return
+
 
     for survey_element in survey_in['children']:
         get_label_mappings_0(survey_element)
