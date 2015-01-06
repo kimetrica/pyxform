@@ -13,9 +13,6 @@ from . import section
 from . import question
 
 
-OPTION_LABEL_MAP_KEY= 'option_label_map'
-
-
 def get_label_mappings(survey_in):
     question_label_mappings= dict()
     option_label_mappings= dict()
@@ -68,14 +65,3 @@ def get_label_mappings(survey_in):
         get_label_mappings_0(survey_element)
 
     return question_label_mappings, option_label_mappings, label_languages
-
-# DEBUG
-if __name__ == '__main__':
-    from pyxform import survey_from
-    question_label_mappings, option_label_mappings= get_label_mappings(survey_from.xls('/home/esmail/Downloads/MiningGenderSurveyCompletev141031NOSKIP (1).xls'))
-    
-    for v in question_label_mappings.itervalues():
-        if OPTION_LABEL_MAP_KEY in v:
-            print v
-            break
-    
