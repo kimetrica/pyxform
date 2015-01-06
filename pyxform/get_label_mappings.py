@@ -13,6 +13,9 @@ from . import section
 from . import question
 
 
+# Use 'constants.DEFAULT_LANGUAGE' prohibited presumably by "ball of mud" design method.
+ACTUAL_DEFAULT_LANGUAGE= u'default'
+
 def get_label_mappings(survey_in):
     question_label_mappings= dict()
     option_label_mappings= dict()
@@ -40,8 +43,8 @@ def get_label_mappings(survey_in):
             if question_labels:
                 if isinstance(question_labels, basestring):
                     label_string= question_labels
-                    question_label_mappings[question_name]= {constants.DEFAULT_LANGUAGE: label_string}
-                    label_languages.update([constants.DEFAULT_LANGUAGE])
+                    question_label_mappings[question_name]= {ACTUAL_DEFAULT_LANGUAGE: label_string}
+                    label_languages.update([ACTUAL_DEFAULT_LANGUAGE])
                 elif isinstance(question_labels, dict):
                     question_label_mappings[question_name]= question_labels
                     label_languages.update(question_labels.keys())
@@ -59,8 +62,8 @@ def get_label_mappings(survey_in):
                     if option_labels:
                         if isinstance(option_labels, basestring):
                             label_string= option_labels
-                            question_options_map[option_name]= {constants.DEFAULT_LANGUAGE: label_string}
-                            label_languages.update([constants.DEFAULT_LANGUAGE])
+                            question_options_map[option_name]= {ACTUAL_DEFAULT_LANGUAGE: label_string}
+                            label_languages.update([ACTUAL_DEFAULT_LANGUAGE])
                         elif isinstance(option_labels, dict):
                             question_options_map[option_name]= option_labels
                             label_languages.update(option_labels.keys())
