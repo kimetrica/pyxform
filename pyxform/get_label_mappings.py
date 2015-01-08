@@ -16,7 +16,7 @@ from . import question
 # Use 'constants.DEFAULT_LANGUAGE' prohibited presumably by "ball of mud" design method.
 ACTUAL_DEFAULT_LANGUAGE= u'default'
 
-def get_label_mappings(survey_in):
+def get_label_mappings(survey_in, variable_paths=False):
     question_label_mappings= dict()
     option_label_mappings= dict()
     label_languages= set()
@@ -29,14 +29,16 @@ def get_label_mappings(survey_in):
 
         # Recur into sections.
         if isinstance(survey_element, (survey.Survey, section.Section) ):
-            group_prefix= variable_name_prefix + survey_element[constants.NAME].encode('UTF-8')
+            group_path= variable_name_prefix + survey_element[constants.NAME]
             for child_element in survey_element.get('children', []):
-                get_label_mappings_0(child_element, variable_name_prefix=group_prefix)
+                get_label_mappings_0(child_element, variable_name_prefix=group_path)
 
         # Get label(s) associated with a question.
         elif isinstance(survey_element, question.Question):
-            # Construct the question name including any "path" prefix.
-            question_name= variable_name_prefix + survey_element[constants.NAME].encode('UTF-8')
+            # Construct the question name including "path" prefix, if necessary.
+            question_name= variable_name_prefix if variable_paths else ''
+            question_name+= survey_element[constants.NAME]
+            question_name.encode('UTF-8')
             question_labels= survey_element.get(constants.LABEL)
 
             # Record the question's label(s) and associated language(s), if any.
