@@ -12,6 +12,7 @@ from . import constants
 from . import survey
 from . import section
 from . import question
+from . import aliases
 
 
 # Use 'constants.DEFAULT_LANGUAGE' prohibited presumably by "ball of mud" design method.
@@ -50,7 +51,7 @@ def get_label_mappings(survey_in, variable_paths=False, group_delimiter='/'):
                 elif isinstance(question_labels, dict):
                     question_labels_dict= question_labels
                 else:
-                    raise Exception('Unexpected question label type "{}".'.format(type(question_labels)))
+                    raise Exception('Unexpected question label type: {}.'.format(type(question_labels)))
 
                 question_label_mappings[question_name]= question_labels_dict
                 label_languages.update(question_labels_dict.keys())
@@ -69,15 +70,15 @@ def get_label_mappings(survey_in, variable_paths=False, group_delimiter='/'):
                         elif isinstance(option_labels, dict):
                             option_labels_dict= option_labels
                         else:
-                            raise Exception('Unexpected option label type "{}".'.format(type(option_labels)))
+                            raise Exception('Unexpected option label type: {}.'.format(type(option_labels)))
 
                     question_options_map[option_name]= option_labels_dict
                     label_languages.update(option_labels_dict.keys())
 
-                if isinstance(survey_element, question.SelectOneQuestion):
+                if aliases.get_xform_question_type(survey_element[constants.TYPE]) == constants.SELECT_ONE_XFORM:
                     if question_options_map:
                         option_label_mappings[question_name]= question_options_map
-                else:
+                elif aliases.get_xform_question_type(survey_element[constants.TYPE]) == constants.SELECT_ALL_THAT_APPLY_XFORM:
                     # Multi-select question. Record a separate question corresponding to each option and skip labeling the options. 
                     for language in label_languages:
                         for option_name, option_labels_dict in question_options_map.iteritems():
@@ -85,6 +86,8 @@ def get_label_mappings(survey_in, variable_paths=False, group_delimiter='/'):
                                 multi_select_question_name= question_name + group_delimiter + option_name
                                 multi_select_question_label= question_labels_dict.get(language, question_name) + ' :: ' + option_labels_dict.get(language, option_name)
                                 question_label_mappings.setdefault(multi_select_question_name, dict())[language]= multi_select_question_label
+                else:
+                    raise Exception('Unexpected multiple-choice question "type": {}.'.format(survey_element[constants.TYPE]))
 
         else:
             raise Exception('Unexpected survey element type "{}"'.format(type(survey_element)))
