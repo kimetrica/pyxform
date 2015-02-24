@@ -1,8 +1,14 @@
-from utils import node
-from survey_element import SurveyElement
-from question_type_dictionary import QUESTION_TYPE_DICT
-from errors import PyXFormError
-from pyxform import constants
+
+from __future__ import absolute_import
+
+from .                          import constants
+from .aliases                   import get_xform_question_type
+from .aliases                   import get_xlsform_question_type 
+from .errors                    import PyXFormError
+from .question_type_dictionary  import QUESTION_TYPE_DICT
+from .section                   import Section
+from .survey_element            import SurveyElement
+from .utils                     import node
 
 
 class Question(SurveyElement):
@@ -26,6 +32,71 @@ class Question(SurveyElement):
 
     def xml_control(self):
         return None
+
+
+    def is_xform_type(self, xform_type):
+        if self.get(constants.TYPE):
+            return get_xform_question_type(self.get(constants.TYPE)) == xform_type
+        else:
+            raise Exception('Question named "{}" has no specified type.'.format(self.get(constants.NAME)))
+        
+
+    def is_multiple_choice(self):
+        return False
+
+
+    def is_multi_select(self):
+        return False
+
+
+    def is_single_select(self):
+        return False
+
+
+    def is_decimal(self):
+        return False
+    
+
+    def is_integer(self):
+        return False
+
+
+    def is_number(self):
+        return self.is_decimal() or self.is_integer()
+
+
+    def is_image(self):
+        return False
+
+
+    def is_audio(self):
+        return False
+
+
+    def is_video(self):
+        return False
+
+
+    def is_binary(self):
+        return False
+
+
+    @property
+    def group(self):
+        '''
+        Get the question's immediately enclosing group, if any.
+
+        :rtype: pyxform.section.Section
+        '''
+
+        parent= self.get(constants.PARENT)
+        while parent:
+            if isinstance(parent, Section):
+                break
+
+            parent= parent.get(constants.PARENT)
+
+        return parent
 
 
 class InputQuestion(Question):
@@ -58,6 +129,14 @@ class InputQuestion(Question):
                 query += '[' + choice_filter + ']'
             result.setAttribute('query', query)
         return result
+
+
+    def is_decimal(self):
+        return self.is_xform_type(constants.DECIMAL_XFORM)
+    
+
+    def is_integer(self):
+        return self.is_xform_type(constants.INT_XFORM)
 
 
 class TriggerQuestion(Question):
@@ -98,6 +177,28 @@ class UploadQuestion(Question):
                 mediatype=self._get_media_type(),
                 *self.xml_label_and_hint()
                 )
+
+
+    def is_image(self):
+        return get_xlsform_question_type(self[constants.TYPE]) == constants.IMAGE_XLSFORM
+
+
+    def is_audio(self):
+        return get_xlsform_question_type(self[constants.TYPE]) == constants.AUDIO_XLSFORM
+
+
+    def is_video(self):
+        return get_xlsform_question_type(self[constants.TYPE]) == constants.VIDEO_XLSFORM
+
+
+    def is_binary(self):
+        xlsform_binary= self.is_image() or self.is_audio() or self.is_video()
+        xform_binary= get_xform_question_type(self[constants.TYPE]) == constants.BINARY_XFORM
+
+        if not (xlsform_binary or xform_binary):
+            print 'WARNING: \'UploadQuestion\' "{}" was not detected as a binary question.'.format(self)
+
+        return True
 
 
 class Option(SurveyElement):
@@ -203,6 +304,24 @@ class MultipleChoiceQuestion(Question):
         return bool((not self.get(constants.CHILDREN)) and self.get(constants.ITEMSET_XFORM))
 
 
+    def is_multiple_choice(self):
+        return True
+
+
+    def is_multi_select(self):
+        return self.is_xform_type(constants.SELECT_ALL_THAT_APPLY_XFORM)
+
+
+    def is_single_select(self):
+        return self.is_xform_type(constants.SELECT_ONE_XFORM)
+
+
+    @property
+    def options(self):
+        return self.get(constants.CHILDREN)
+
+
+# TODO: Utilize or remove this.
 class SelectOneQuestion(MultipleChoiceQuestion):
     def __init__(self, *args, **kwargs):
         super(SelectOneQuestion, self).__init__(*args, **kwargs)
