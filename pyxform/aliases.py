@@ -173,7 +173,7 @@ def get_xform_question_type(original_question_type_str):
         xform_question_type_str= question_type_str
     
     elif question_type_str in XLSFORM_TO_XFORM_TYPES:
-        # The question type is an XLSForm type with a known XLSForm equivalent.
+        # The question type is an XLSForm type with a known XForm equivalent.
         xform_question_type_str= XLSFORM_TO_XFORM_TYPES[question_type_str]
 
     elif question_type_str in QUESTION_TYPE_DICT:
@@ -186,7 +186,7 @@ def get_xform_question_type(original_question_type_str):
         xform_question_type_str= question_type_str
 
     if not xform_question_type_str:
-        raise PyXFormError('Unexpected XForm type "{}".'.format(question_type_str))
+        raise PyXFormError('Could not find XForm equivalent of type "{}".'.format(question_type_str))
     
     return xform_question_type_str
 
@@ -220,6 +220,6 @@ def get_xlsform_question_type(original_question_type_str):
             xlsform_question_type_str= XFORM_TO_XLSFORM_TYPES[xform_question_type]
 
     if not xlsform_question_type_str:
-        raise PyXFormError('Unexpected XLSForm type "{}".'.format(original_question_type_str))
+        raise PyXFormError('Could not find XLSForm equivalent of type "{}".'.format(original_question_type_str))
     else:
         return xlsform_question_type_str
