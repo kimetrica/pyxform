@@ -1,5 +1,6 @@
 import pyxform.constants
-from question import SurveyElement
+
+from survey_element import SurveyElement
 from utils import node
 from errors import PyXFormError
 

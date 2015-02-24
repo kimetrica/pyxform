@@ -20,6 +20,7 @@ VERSION = u"version"
 PUBLIC_KEY = u"public_key"
 SUBMISSION_URL = u"submission_url"
 DEFAULT_LANGUAGE = u"default_language"
+ACTUAL_DEFAULT_LANGUAGE= u'default'
 STYLE = u"style"
 
 BIND = u"bind"#TODO: What should I do with the nested types? (readonly and relevant)

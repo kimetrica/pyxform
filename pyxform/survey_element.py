@@ -1,4 +1,6 @@
 import json
+import random
+
 from utils import is_valid_xml_tag, node
 from xls2json import print_pyobj_to_json
 from question_type_dictionary import QUESTION_TYPE_DICT
@@ -47,6 +49,9 @@ class SurveyElement(dict):
         u"flat": lambda: False, # FIXME: Not a type
     }
 
+    def __repr__(self, *args, **kwargs):
+        return self.get('name', 'UNNAMED ELEMENT')
+    
     def _default(self):
         # TODO: need way to override question type dictionary
         defaults = QUESTION_TYPE_DICT
@@ -345,6 +350,40 @@ class SurveyElement(dict):
         doesn't make sense to implement here in the base class.
         """
         raise Exception("Control not implemented")
+
+
+    @property
+    def name(self):
+        '''
+        Get the element's name.
+        '''
+
+        return self.get(constants.NAME)
+
+
+    def get_label(self, language=constants.ACTUAL_DEFAULT_LANGUAGE):
+        '''
+        Get a (single) label for the element, if any. If the element has multiple labels, return the "default" label or a random one.
+        '''
+
+        label= self.get(constants.LABEL)
+
+        if label and isinstance(label, dict):
+            if language in label:
+                pass
+            elif [lang for lang in label.iterkeys() if lang.lower() == language.lower()]:
+                # Case mismatch.
+                language= [lang for lang in label.iterkeys() if lang.lower() == language.lower()][0]
+            elif constants.ACTUAL_DEFAULT_LANGUAGE in label:
+                language= constants.ACTUAL_DEFAULT_LANGUAGE
+            else:
+                # Choose a random language/label.
+                language= random.sample(label.iterkeys(), 1)[0]
+
+            label= label[language]
+
+        return label
+
 
 def hashable(v):
     """Determine whether `v` can be hashed."""
