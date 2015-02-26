@@ -37,6 +37,7 @@ class SurveyElement(dict):
         u"intent": unicode,
         u"jr:count" : unicode,
         constants.BIND: dict,
+        constants.INSTANCE_XFORM: dict,
         constants.CONTROL: dict,
         constants.MEDIA: dict,
         # this node will also have a parent and children, like a tree!
@@ -202,8 +203,8 @@ class SurveyElement(dict):
         print_pyobj_to_json(self.to_json_dict(), path)
 
     def __eq__(self, y):
-        # I need to look up how exactly to override the == operator.
-        return self.to_json_dict() == y.to_json_dict()
+        return hasattr(y, 'to_json_dict') and callable(y.to_json_dict) and \
+                    self.to_json_dict() == y.to_json_dict()
 
     def _translation_path(self, display_element):
         return self.get_xpath() + ":" + display_element
