@@ -5,14 +5,49 @@ Created on Dec 9, 2014
 '''
 
 
-from __future__ import absolute_import
 from collections import OrderedDict
 
 from .. import constants
-from .. import question
 from .. import aliases
-from ..survey import Survey
-from ..section import Section
+from ..errors   import PyXFormError
+from ..question import MultipleChoiceQuestion
+from ..question import Question
+from ..survey   import Survey
+from ..section  import Section
+
+def _get_labels_dict(survey_element):
+    label= survey_element.get(constants.LABEL)
+
+    # Record the label(s) and associated language(s), if any.
+    if label:
+        if isinstance(label, basestring):
+            labels_dict= {constants.ACTUAL_DEFAULT_LANGUAGE: label}
+        elif isinstance(label, dict):
+            labels_dict= label
+        else:
+            raise PyXFormError('Unexpected label type: {}.'.format(type(label)))
+    else:
+        labels_dict= dict()
+
+    return labels_dict
+
+
+def get_multiple_choice_option_labels(question):
+    '''
+    Retrieve a 'dict' of the option labels for a multiple-choice question.
+    '''
+
+    assert isinstance(question, MultipleChoiceQuestion)
+
+    question_options_map= OrderedDict()
+    option_label_languages= set()
+    for option in question.get('children', []):
+        option_name= option[constants.NAME].encode('UTF-8')
+        option_labels_dict= _get_labels_dict(option)
+        question_options_map[option_name]= option_labels_dict
+        option_label_languages.update(option_labels_dict.keys())
+
+    return question_options_map, option_label_languages
 
 
 def get_label_mappings(survey, path_prefixes=False, path_delimiter='/'):
@@ -22,7 +57,7 @@ def get_label_mappings(survey, path_prefixes=False, path_delimiter='/'):
 
     :param pyxform.survey.Survey survey: The survey from which to get the labels.
     :param bool path_prefixes: Flag indicating whether or not to use group/section
-        path prefixes when storing question and option names.
+        path prefixes when storing question and option names (e.g. "A/A01").
     :param str path_delimiter: Delimiter to insert after path prefix elements.
     :return: Question label mappings (e.g. {question_name: question_label_dict}).
     :rtype: dict
@@ -47,72 +82,48 @@ def get_label_mappings(survey, path_prefixes=False, path_delimiter='/'):
         :param str current_prefix: The path prefix, if any, of the current element.
         '''
 
-        # If a name prefix was passed in, append a trailing delimiter before adding to it.
+        # If a name prefix was passed in (indicating this is a sub-element),
+        #   append a trailing delimiter before adding to it.
         if current_prefix != '':
             current_prefix= current_prefix + path_delimiter
 
-        # Recur into sections.
+        # Recur into the survey root/sub-sections.
         if isinstance(survey_element, (Survey, Section) ):
             group_path= current_prefix + survey_element[constants.NAME]
             for child_element in survey_element.get('children', []):
                 get_label_mappings_0(child_element, current_prefix=group_path)
 
         # Get label(s) associated with a question.
-        elif isinstance(survey_element, question.Question):
+        elif isinstance(survey_element, Question):
             # Construct the question name including "path" prefix, if necessary.
-            question_name= current_prefix if path_prefixes else ''
-            question_name+= survey_element[constants.NAME]
-            question_name.encode('UTF-8')
-            question_labels= survey_element.get(constants.LABEL)
+            recorded_question_name= current_prefix if path_prefixes else ''
+            recorded_question_name+= survey_element[constants.NAME].encode('UTF-8')
+            question_labels_dict= _get_labels_dict(survey_element)
+            question_label_mappings[recorded_question_name]= question_labels_dict
+            label_languages.update(question_labels_dict.keys())
 
-            # Record the question's label(s) and associated language(s), if any.
-            question_labels_dict= dict() # Must exist, even if empty, for below.
-            if question_labels:
-                if isinstance(question_labels, basestring):
-                    question_labels_dict[constants.ACTUAL_DEFAULT_LANGUAGE]= question_labels
-                elif isinstance(question_labels, dict):
-                    question_labels_dict= question_labels
-                else:
-                    raise Exception('Unexpected question label type: {}.'.format(type(question_labels)))
-
-                question_label_mappings[question_name]= question_labels_dict
-                label_languages.update(question_labels_dict.keys())
-
-            # Get labels associated with multiple-choice questions.
-            if isinstance(survey_element, question.MultipleChoiceQuestion):
-                question_options_map= OrderedDict()
-                for option in survey_element.get('children', []):
-                    option_name= option[constants.NAME].encode('UTF-8')
-                    option_labels= option.get(constants.LABEL)
-
-                    # Record the option's label(s) and associated language(s), if any.
-                    if option_labels:
-                        if isinstance(option_labels, basestring):
-                            option_labels_dict= {constants.ACTUAL_DEFAULT_LANGUAGE: option_labels}
-                        elif isinstance(option_labels, dict):
-                            option_labels_dict= option_labels
-                        else:
-                            raise Exception('Unexpected option label type: {}.'.format(type(option_labels)))
-
-                    question_options_map[option_name]= option_labels_dict
-                    label_languages.update(option_labels_dict.keys())
+            # Get labels associated with multiple-choice questions' options.
+            if isinstance(survey_element, MultipleChoiceQuestion):
+                question_options_map, option_label_languages= get_multiple_choice_option_labels(survey_element)
+                label_languages.update(option_label_languages)
 
                 if aliases.get_xform_question_type(survey_element[constants.TYPE]) == constants.SELECT_ONE_XFORM:
                     if question_options_map:
-                        option_label_mappings[question_name]= question_options_map
+                        option_label_mappings[recorded_question_name]= question_options_map
                 elif aliases.get_xform_question_type(survey_element[constants.TYPE]) == constants.SELECT_ALL_THAT_APPLY_XFORM:
+                    # FIXME: Make this optional and fully configurable.
                     # Multi-select question. Record a separate question corresponding to each option and skip labeling the options.
                     for language in label_languages:
                         for option_name, option_labels_dict in question_options_map.iteritems():
                             if (language in question_labels_dict) or (language in option_labels_dict):
-                                multi_select_question_name= question_name + path_delimiter + option_name
-                                multi_select_question_label= question_labels_dict.get(language, question_name) + ' :: ' + option_labels_dict.get(language, option_name)
+                                multi_select_question_name= recorded_question_name + path_delimiter + option_name
+                                multi_select_question_label= question_labels_dict.get(language, recorded_question_name) + ' :: ' + option_labels_dict.get(language, option_name)
                                 question_label_mappings.setdefault(multi_select_question_name, dict())[language]= multi_select_question_label
                 else:
-                    raise Exception('Unexpected multiple-choice question "type": {}.'.format(survey_element[constants.TYPE]))
+                    raise PyXFormError('Unexpected multiple-choice question "type": {}.'.format(survey_element[constants.TYPE]))
 
         else:
-            raise Exception('Unexpected survey element type "{}"'.format(type(survey_element)))
+            raise PyXFormError('Unexpected survey element type "{}"'.format(type(survey_element)))
 
         return
 

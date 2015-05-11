@@ -5,18 +5,14 @@ Created on Jan 21, 2015
 '''
 
 
-from __future__ import absolute_import
 from __future__ import unicode_literals
 from collections import OrderedDict
 
-import odk_to_spss_syntax
-from odk_to_spss_syntax import get_spss_variable_name
-from odk_to_spss_syntax import get_spss_variable_label
-from odk_to_spss_syntax import get_spss_value_label
+from .utilities import get_spss_variable_name
+from . import from_dicts
 
 from .. import constants
-from .get_label_mappings import get_label_mappings
-from ..utilities import get_questions
+from ..utilities.get_label_mappings import get_label_mappings
 from ..survey import Survey
 
 
@@ -49,9 +45,11 @@ def question_to_spss_variable_name(question, group_delimiter=None):
 
 def get_per_language_labels(survey, path_prefixes=True, question_name_transform=None):
 
+    # Get all question and option labels and all languages represented in the labels.
     question_label_mappings, option_label_mappings, label_languages= get_label_mappings(survey, path_prefixes=path_prefixes)
-    per_language_labels= dict()
 
+    # Organize the labels by language
+    per_language_labels= dict()
     for question_name, question_labels in question_label_mappings.iteritems():
 
         if question_name_transform:
@@ -71,7 +69,7 @@ def get_per_language_labels(survey, path_prefixes=True, question_name_transform=
     return per_language_labels
 
 
-def survey_to_spss_label_syntax(survey):
+def survey_to_spss_label_syntaxes(survey):
 
     exportable_label_mappings= get_per_language_labels(survey)
 
@@ -80,16 +78,25 @@ def survey_to_spss_label_syntax(survey):
         variable_labels_dict= exportable_label_mappings.get(language, dict()).get(VARIABLE_LABELS_DICT_KEY)
         value_labels_dict= exportable_label_mappings.get(language, dict()).get(VALUE_LABELS_DICT_KEY)
 
-        spss_label_syntax_string= odk_to_spss_syntax.from_dicts(variable_labels_dict, value_labels_dict)
+        spss_label_syntax_string= from_dicts(variable_labels_dict, value_labels_dict)
         syntaxes[language]= spss_label_syntax_string
 
     return syntaxes
 
 
-if __name__ == '__main__':
-    from .. import survey_from
-    s= survey_from.xls('/home/esmail/Downloads/uga_14_v6 (1).xls')
-    syntaxes= survey_to_spss_label_syntax(s)
-    for language in syntaxes:
-        with open('/home/esmail/Downloads/uga_14_v6' + '_' + language + '_labels.sps', 'w') as f:
-            f.write(syntaxes['default'].encode('UTF-8'))
+# TODO: Does this maybe belong in KoBoCAT?
+def get_multi_select_disaggregated_question_names(question, group_delimiter='/'):
+    '''
+    Get a list of the question names a multi-select question's options will be
+    disaggregated into when exported.
+    '''
+
+    assert question.is_multi_select()
+    base_question_name= question.get_path()
+
+    disaggregated_question_names= list()
+    for option in question.options:
+        disaggregated_question_names.append(base_question_name + group_delimiter + option.name)
+
+    return disaggregated_question_names
+
