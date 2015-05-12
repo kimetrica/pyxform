@@ -4,7 +4,6 @@ python:
 install:
   - pip install -q -r requirements.pip --use-mirrors
   - pip install coveralls nose-cov
+cache: pip
 script: nosetests --with-coverage --cover-package pyxform --cov-config .coveragerc
 after_success: coveralls
-notifications:
-  irc: "irc.freenode.org#moditest"

@@ -2,8 +2,8 @@
 pyxform v0.9
 ============
 
-.. image:: https://travis-ci.org/XLSForm/pyxform.svg?branch=master
-    :target: https://travis-ci.org/XLSForm/pyxform
+.. image:: https://travis-ci.org/kobotoolbox/pyxform.svg?branch=master
+    :target: https://travis-ci.org/kobotoolbox/pyxform
 .. image:: https://coveralls.io/repos/kobotoolbox/pyxform/badge.svg
     :target: https://coveralls.io/r/kobotoolbox/pyxform
 
