@@ -5,8 +5,6 @@ Created on Jan 21, 2015
 '''
 
 
-from __future__ import absolute_import
-
 from .. import constants
 from .. import aliases
 from ..question import Question
@@ -45,14 +43,14 @@ def get_questions(survey, desired_python_type=None, desired_xform_type=None):
 
 
 def get_multiselect_questions(survey):
-    multiselect_questions= get_questions(survey, desired_python_type=MultipleChoiceQuestion, 
+    multiselect_questions= get_questions(survey, desired_python_type=MultipleChoiceQuestion,
       desired_xform_type=constants.SELECT_ALL_THAT_APPLY_XFORM)
 
     return multiselect_questions
 
 
 def get_select_one_questions(survey):
-    select_one_questions=  get_questions(survey, desired_python_type=MultipleChoiceQuestion, 
+    select_one_questions=  get_questions(survey, desired_python_type=MultipleChoiceQuestion,
       desired_xform_type=constants.SELECT_ONE_XFORM)
 
     return select_one_questions

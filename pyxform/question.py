@@ -1,9 +1,9 @@
 
-from __future__ import absolute_import
+from __future__ import unicode_literals
 
 from .                          import constants
 from .aliases                   import get_xform_question_type
-from .aliases                   import get_xlsform_question_type 
+from .aliases                   import get_xlsform_question_type
 from .errors                    import PyXFormError
 from .question_type_dictionary  import QUESTION_TYPE_DICT
 from .section                   import Section
@@ -47,7 +47,7 @@ class Question(SurveyElement):
             return get_xform_question_type(self.get(constants.TYPE)) == xform_type
         else:
             raise Exception('Question named "{}" has no specified type.'.format(self.get(constants.NAME)))
-        
+
 
     def is_multiple_choice(self):
         return False
@@ -63,7 +63,7 @@ class Question(SurveyElement):
 
     def is_decimal(self):
         return False
-    
+
 
     def is_integer(self):
         return False
@@ -120,12 +120,12 @@ class InputQuestion(Question):
         for key, value in control_dict.items():
             control_dict[key] = survey.insert_xpaths(value)
         control_dict['ref'] = self.get_xpath()
-        
+
         result = node(**control_dict)
         if label_and_hint:
             for element in self.xml_label_and_hint():
                 result.appendChild(element)
-        
+
         # Input types are used for selects with external choices sheets.
         if self['query']:
             choice_filter = self.get('choice_filter')
@@ -139,7 +139,7 @@ class InputQuestion(Question):
 
     def is_decimal(self):
         return self.is_xform_type(constants.DECIMAL_XFORM)
-    
+
 
     def is_integer(self):
         return self.is_xform_type(constants.INT_XFORM)
@@ -230,10 +230,10 @@ class Option(SurveyElement):
 #        itemset_children = [node('value', ref='name'), node('label', ref=itemset_label_ref)]
 #        result.appendChild(node('itemset', *itemset_children, nodeset=nodeset))
 #        return result
-#        
+#
 #class SelectOneQuestion(MultipleChoiceQuestion):
 #    pass
-    
+
 class MultipleChoiceQuestion(Question):
 
     def __init__(self, *args, **kwargs):
@@ -253,8 +253,8 @@ class MultipleChoiceQuestion(Question):
     def validate(self):
         Question.validate(self)
         descendants = self.iter_descendants()
-        descendants.next() # iter_descendants includes self; we need to pop it 
-        for choice in descendants: 
+        descendants.next() # iter_descendants includes self; we need to pop it
+        for choice in descendants:
             choice.validate()
 
     def xml_control(self):
@@ -288,10 +288,10 @@ class MultipleChoiceQuestion(Question):
     def is_cascading_select(self):
         '''
         Determine whether or not this is a cascading-select question.
-        
+
         :rtype: bool
         '''
-        
+
         return bool((not self.get(constants.CHILDREN)) and self.get(constants.ITEMSET_XFORM))
 
 

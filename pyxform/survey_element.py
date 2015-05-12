@@ -1,11 +1,15 @@
+from __future__ import unicode_literals
 import json
 import random
 
-from utils import is_valid_xml_tag, node
-from xls2json import print_pyobj_to_json
-from question_type_dictionary import QUESTION_TYPE_DICT
-from errors import PyXFormError
-from pyxform import constants
+from . import constants
+from .utils import is_valid_xml_tag, node
+from .xls2json import print_pyobj_to_json
+from .question_type_dictionary import QUESTION_TYPE_DICT
+from .errors import PyXFormError
+
+
+RANDOM_SEED= random.seed()
 
 
 def _overlay(over, under):
@@ -52,7 +56,7 @@ class SurveyElement(dict):
 
     def __repr__(self, *args, **kwargs):
         return self.get('name', 'UNNAMED ELEMENT')
-    
+
     def _default(self):
         # TODO: need way to override question type dictionary
         defaults = QUESTION_TYPE_DICT
@@ -362,6 +366,22 @@ class SurveyElement(dict):
         return self.get(constants.NAME)
 
 
+    def get_path(self, group_delimiter='/'):
+        '''
+        Get the elements path within the survey.
+        '''
+        # TODO: Any other way of avoiding a circular import?
+        from pyxform.survey import Survey
+
+        path= self.name
+        parent= self.get(constants.PARENT, Survey())
+        while not isinstance(parent, Survey):
+            path= parent.name + group_delimiter + path
+            parent= parent.get(constants.PARENT, Survey())
+
+        return path
+
+
     def get_label(self, language=constants.ACTUAL_DEFAULT_LANGUAGE):
         '''
         Get a (single) label for the element, if any. If the element has multiple labels, return the "default" label or a random one.
@@ -375,11 +395,15 @@ class SurveyElement(dict):
             elif [lang for lang in label.iterkeys() if lang.lower() == language.lower()]:
                 # Case mismatch.
                 language= [lang for lang in label.iterkeys() if lang.lower() == language.lower()][0]
-            elif constants.ACTUAL_DEFAULT_LANGUAGE in label:
+            elif (language != constants.ACTUAL_DEFAULT_LANGUAGE) and \
+                    (constants.ACTUAL_DEFAULT_LANGUAGE in label):
                 language= constants.ACTUAL_DEFAULT_LANGUAGE
             else:
-                # Choose a random language/label.
-                language= random.sample(label.iterkeys(), 1)[0]
+                # Choose a random language/label. Use a previously generated
+                #   random seed so the language selection is consistent for a
+                #   given execution.
+                random.seed(RANDOM_SEED)
+                language= random.sample(label.keys(), 1)[0]
 
             label= label[language]
 
