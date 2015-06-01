@@ -23,8 +23,9 @@ nsmap = {
     u"xmlns:ev": u"http://www.w3.org/2001/xml-events",
     u"xmlns:xsd": u"http://www.w3.org/2001/XMLSchema",
     u"xmlns:jr": u"http://openrosa.org/javarosa",
-    u"xmlns:orx": u"http://openrosa.org/xforms/"
+    u"xmlns:orx": u"http://openrosa.org/xforms"
     }
+
 
 class Survey(Section):
 
@@ -52,9 +53,10 @@ class Survey(Section):
             constants.STYLE: unicode
         }
     )
-        
 
     def validate(self):
+        if self.id_string in [None, 'None']:
+            raise PyXFormError('Survey cannot have an empty id_string')
         super(Survey, self).validate()
         self._validate_uniqueness_of_section_names()
 
@@ -63,7 +65,8 @@ class Survey(Section):
         for e in self.iter_descendants():
             if isinstance(e, Section):
                 if e.name in section_names:
-                    raise PyXFormError("There are two sections with the name %s." % e.name)
+                    raise PyXFormError(
+                        "There are two sections with the name %s." % e.name)
                 section_names.append(e.name)
 
     def xml(self):
@@ -88,21 +91,29 @@ class Survey(Section):
 
     def _generate_static_instances(self):
         """
-        Generates <instance> elements for static data (e.g. choices for select type questions)
+        Generates <instance> elements for static data
+        (e.g. choices for select type questions)
         """
         for list_name, choice_list in self.choices.items():
             instance_element_list = []
             for idx, choice in zip(range(len(choice_list)), choice_list):
                 choice_element_list = []
-                #Add a unique id to the choice element incase there is itext it refrences
+                # Add a unique id to the choice element incase there is itext
+                # it refrences
                 itextId = '-'.join(['static_instance', list_name, str(idx)])
                 choice_element_list.append(node("itextId", itextId))
 
                 for choicePropertyName, choicePropertyValue in choice.items():
-                    if isinstance(choicePropertyValue, basestring) and choicePropertyName != 'label':
-                        choice_element_list.append(node(choicePropertyName, unicode(choicePropertyValue)))
-                instance_element_list.append(node("item", *choice_element_list))
-            yield node("instance", node("root", *instance_element_list), id=list_name)
+                    if isinstance(choicePropertyValue, basestring) \
+                            and choicePropertyName != 'label':
+                        choice_element_list.append(
+                            node(choicePropertyName,
+                                 unicode(choicePropertyValue))
+                        )
+                instance_element_list.append(node("item",
+                                                  *choice_element_list))
+            yield node("instance", node("root", *instance_element_list),
+                       id=list_name)
 
     def xml_model(self):
         """
@@ -125,7 +136,8 @@ class Survey(Section):
                 submission_attrs["action"] = self.submission_url
             if self.public_key:
                 submission_attrs["base64RsaPublicKey"] = self.public_key
-            submission_node = node("submission", method="form-data-post", **submission_attrs)
+            submission_node = node("submission", method="form-data-post",
+                                   **submission_attrs)
             model_children.insert(0, submission_node)
         return node(constants.MODEL_XFORM,  *model_children)
 
@@ -133,7 +145,7 @@ class Survey(Section):
         result = Section.xml_instance(self)
         result.setAttribute(u"id", self.id_string)
 
-        #add instance xmlns attribute to the instance node
+        # add instance xmlns attribute to the instance node
         if self.instance_xmlns:
             result.setAttribute(u"xmlns", self.instance_xmlns)
 
@@ -151,34 +163,51 @@ class Survey(Section):
 
     def _setup_translations(self):
         """
-        set up the self._translations dict which will be referenced in the setup media and itext functions
+        set up the self._translations dict which will be referenced in the
+        setup media and itext functions
         """
         self._translations = defaultdict(dict)
         for element in self.iter_descendants():
             for d in element.get_translations(self.default_language):
-                self._translations[d['lang']][d['path']] = {"long" : d['text']}
+                self._translations[d['lang']][d['path']] = {"long": d['text']}
 
-        #This code sets up translations for choices in filtered selects.
+        # This code sets up translations for choices in filtered selects.
         for list_name, choice_list in self.choices.items():
             for idx, choice in zip(range(len(choice_list)), choice_list):
                 for choicePropertyName, choicePropertyValue in choice.items():
-                    itextId = '-'.join(['static_instance', list_name, str(idx)])
+                    itextId = '-'.join(
+                        ['static_instance', list_name, str(idx)])
                     if isinstance(choicePropertyValue, dict):
-                        for mediatypeorlanguage, value in choicePropertyValue.items():
+                        for mediatypeorlanguage, value in choicePropertyValue.items():  # noqa
                             if isinstance(value, dict):
                                 for langauge, value in value.items():
-                                    self._add_to_nested_dict(self._translations, [langauge, itextId, mediatypeorlanguage], value)
+                                    self._add_to_nested_dict(
+                                        self._translations,
+                                        [langauge, itextId,
+                                         mediatypeorlanguage],
+                                        value)
                             else:
                                 if choicePropertyName == 'media':
-                                    self._add_to_nested_dict(self._translations, [self.default_language, itextId, mediatypeorlanguage], value)
+                                    self._add_to_nested_dict(
+                                        self._translations,
+                                        [self.default_language, itextId,
+                                         mediatypeorlanguage],
+                                        value)
                                 else:
-                                    self._add_to_nested_dict(self._translations, [mediatypeorlanguage, itextId, 'long'], value)
+                                    self._add_to_nested_dict(
+                                        self._translations,
+                                        [mediatypeorlanguage, itextId, 'long'],
+                                        value)
                     elif choicePropertyName == 'label':
-                        self._add_to_nested_dict(self._translations, [self.default_language, itextId, 'long'], choicePropertyValue)
+                        self._add_to_nested_dict(
+                            self._translations,
+                            [self.default_language, itextId, 'long'],
+                            choicePropertyValue)
 
     def _add_empty_translations(self):
         """
-        Adds translations so that every itext element has the same elements accross every language.
+        Adds translations so that every itext element has the same elements \
+        accross every language.
         When translations are not provided "-" will be used.
         This disables any of the default_language fallback functionality.
         """
@@ -197,7 +226,8 @@ class Survey(Section):
 
     def _setup_media(self):
         """
-        Traverse the survey, find all the media, and put in into the _translations data structure which looks like this:
+        Traverse the survey, find all the media, and put in into the \
+        _translations data structure which looks like this:
         {language : {element_xpath : {media_type : media}}}
         It matches the xform nesting order.
         """
@@ -212,20 +242,25 @@ class Survey(Section):
             for media_type, possibly_localized_media in media_dict.items():
 
                 if media_type not in SurveyElement.SUPPORTED_MEDIA:
-                    raise PyXFormError("Media type: " + media_type + " not supported")
+                    raise PyXFormError(
+                        "Media type: " + media_type + " not supported")
 
                 localized_media = dict()
 
                 if type(possibly_localized_media) is dict:
-                    #media is localized
+                    # media is localized
                     localized_media = possibly_localized_media
                 else:
-                    #media is not localized so create a localized version using the default language
-                    localized_media = { self.default_language : possibly_localized_media }
+                    # media is not localized so create a localized version
+                    # using the default language
+                    localized_media = {
+                        self.default_language: possibly_localized_media
+                    }
 
                 for language, media in localized_media.items():
 
-                    #Create the required dictionaries in _translations, then add media as a leaf value:
+                    # Create the required dictionaries in _translations,
+                    # then add media as a leaf value:
 
                     if language not in self._translations:
                         self._translations[language] = {}
@@ -235,10 +270,8 @@ class Survey(Section):
                     if translation_key not in translations_language:
                         translations_language[translation_key] = {}
 
-                    #if type(translations_language[translation_key]) is not dict:
-                    #    translations_language[translation_key] = {"long" : translations_language[translation_key]}
-
-                    translations_trans_key = translations_language[translation_key]
+                    translations_trans_key = \
+                        translations_language[translation_key]
 
                     if media_type not in translations_trans_key:
                             translations_trans_key[media_type] = {}
@@ -255,8 +288,8 @@ class Survey(Section):
         result = []
         for lang, translation in self._translations.items():
             if lang == self.default_language:
-                result.append(node("translation", lang=lang, default=u"true()"))
-                #result.append(node("translation", lang=lang))
+                result.append(
+                    node("translation", lang=lang, default=u"true()"))
             else:
                 result.append(node("translation", lang=lang))
 
@@ -264,33 +297,45 @@ class Survey(Section):
                 itext_nodes = []
                 label_type = label_name.partition(":")[-1]
 
-                if type(content) is not dict: raise Exception()
+                if type(content) is not dict:
+                    raise Exception()
 
                 for media_type, media_value in content.items():
 
-                    #There is a odk/jr bug where hints can't have a value for the "form" attribute.
-                    #This is my workaround.
+                    # There is a odk/jr bug where hints can't have a value
+                    # for the "form" attribute.
+                    # This is my workaround.
                     if label_type == u"hint":
-                        value, outputInserted = self.insert_output_values(media_value)
-                        itext_nodes.append(node("value", value, toParseString=outputInserted))
+                        value, outputInserted = \
+                            self.insert_output_values(media_value)
+                        itext_nodes.append(
+                            node("value", value, toParseString=outputInserted))
                         continue
 
                     if media_type == "long":
-                        value, outputInserted = self.insert_output_values(media_value)
-                        #I'm ignoring long types for now because I don't know how they are supposed to work.
-                        #itext_nodes.append(node("value", value, form=media_type, toParseString=outputInserted))
-                        itext_nodes.append(node("value", value, toParseString=outputInserted))
+                        value, outputInserted = \
+                            self.insert_output_values(media_value)
+                        # I'm ignoring long types for now because I don't know
+                        # how they are supposed to work.
+                        itext_nodes.append(
+                            node("value", value, toParseString=outputInserted))
                     elif media_type == "image":
-#                        itext_nodes.append(node("value", "jr://images/" + media_value, form=media_type))
-                        value, outputInserted = self.insert_output_values(media_value)
-                        itext_nodes.append(node("value", "jr://images/" + value, form=media_type, toParseString=outputInserted))
+                        value, outputInserted = \
+                            self.insert_output_values(media_value)
+                        itext_nodes.append(
+                            node("value", "jr://images/" + value,
+                                 form=media_type, toParseString=outputInserted)
+                        )
                     else:
-#                        itext_nodes.append(node("value", "jr://" + media_type + "/" + media_value, form=media_type))
-                        value, outputInserted = self.insert_output_values(media_value)
-                        itext_nodes.append(node("value", "jr://" + media_type + "/" + value, form=media_type, toParseString=outputInserted))
+                        value, outputInserted = \
+                            self.insert_output_values(media_value)
+                        itext_nodes.append(
+                            node("value", "jr://" + media_type + "/" + value,
+                                 form=media_type,
+                                 toParseString=outputInserted))
 
-
-                result[-1].appendChild(node("text", *itext_nodes, id=label_name))
+                result[-1].appendChild(
+                    node("text", *itext_nodes, id=label_name))
 
         return node("itext", *result)
 
@@ -311,11 +356,15 @@ class Survey(Section):
         output_re = re.compile('\n.*(<output.*>)\n(  )*')
         prettyXml = text_re.sub('>\g<1></', xml_with_linebreaks)
         inlineOutput = output_re.sub('\g<1>', prettyXml)
-        inlineOutput = re.compile('<label>\s*\n*\s*\n*\s*</label>').sub('<label></label>', inlineOutput)
+        inlineOutput = re.compile('<label>\s*\n*\s*\n*\s*</label>')\
+            .sub('<label></label>', inlineOutput)
         return '<?xml version="1.0"?>\n' + inlineOutput
 
+    def __repr__(self):
+        return unicode(self)
+
     def __unicode__(self):
-        return "<survey name='%s' element_count='%s'>" % (self.name, len(self.children))
+        return "<pyxform.survey.Survey instance at %s>" % hex(id(self))
 
     def _setup_xpath_dictionary(self):
         self._xpath = {}
@@ -332,23 +381,26 @@ class Survey(Section):
         replace ${varname} with the xpath to varname.
         """
         name = matchobj.group(1)
-        intro = "There has been a problem trying to replace ${%s} with the XPath to the survey element named '%s'." % (name, name)
+        intro = "There has been a problem trying to replace ${%s} with the "\
+            "XPath to the survey element named '%s'." % (name, name)
         if name not in self._xpath:
-            raise PyXFormError(intro + " There is no survey element with this name.")
+            raise PyXFormError(
+                intro + " There is no survey element with this name.")
         if self._xpath[name] is None:
-            raise PyXFormError(intro + " There are multiple survey elements with this name.")
-        return " " + self._xpath[name] + " "
+            raise PyXFormError(intro + " There are multiple survey elements"
+                               " with this name.")
 
+        return " " + self._xpath[name] + " "
 
     def insert_xpaths(self, text):
         """
         Replace all instances of ${var} with the xpath to var.
         """
-        #bracketed_tag = r"\$\{(" + XFORM_TAG_REGEXP + r")\}"
         bracketed_tag = r"\$\{(.*?)\}"
+
         return re.sub(bracketed_tag, self._var_repl_function, unicode(text))
 
-    def _var_repl_output_function(self,matchobj):
+    def _var_repl_output_function(self, matchobj):
         """
         A regex substitution function that will replace
         ${varname} with an output element that has the xpath to varname.
@@ -361,12 +413,14 @@ class Survey(Section):
     def insert_output_values(self, text):
         """
         Replace all the ${variables} in text with xpaths.
-        Returns that and a boolean indicating if there were any ${variables} present.
+        Returns that and a boolean indicating if there were any ${variables}
+        present.
         """
-        #There was a bug where escaping is completely turned off in labels where
-        #variable replacement is used.
-        #For exampke, `${name} < 3` causes an error but `< 3` does not.
-        #This is my hacky fix for it, which does string escaping prior to variable replacement:
+        # There was a bug where escaping is completely turned off in labels
+        # where variable replacement is used.
+        # For exampke, `${name} < 3` causes an error but `< 3` does not.
+        # This is my hacky fix for it, which does string escaping prior to
+        # variable replacement:
         from xml.dom.minidom import Text
         text_node = Text()
         text_node.data = text
@@ -385,8 +439,8 @@ class Survey(Section):
 
     def print_xform_to_file(self, path=None, validate=True, warnings=None):
         """
-        Print the xForm to a file and optionally validate it as well by throwing exceptions
-        and adding warnings to the warnings array.
+        Print the xForm to a file and optionally validate it as well by
+        throwing exceptions and adding warnings to the warnings array.
         """
         if warnings is None:
             warnings = []
@@ -406,9 +460,11 @@ class Survey(Section):
 
     def instantiate(self):
         """
-        Instantiate as in return a instance of SurveyInstance for collected data.
+        Instantiate as in return a instance of SurveyInstance for collected
+        data.
         """
         from instance import SurveyInstance
+
         return SurveyInstance(self)
 
 
