@@ -18,6 +18,7 @@ odk_to_spss_syntax is a Python package for extracting metadata about the questio
 from .main import from_json
 from .main import from_dicts
 from .spss import survey_to_spss_label_syntaxes
+from .spss import survey_to_spss_label_zip
 from .utilities import get_spss_variable_name
 from .utilities import get_spss_variable_label
 from .utilities import get_spss_value_label

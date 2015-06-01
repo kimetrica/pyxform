@@ -6,6 +6,8 @@ Created on Jan 21, 2015
 
 
 from __future__ import unicode_literals
+
+import io
 from collections import OrderedDict
 
 from .utilities import get_spss_variable_name
@@ -14,6 +16,7 @@ from . import from_dicts
 from .. import constants
 from ..utilities.get_label_mappings import get_label_mappings
 from ..survey import Survey
+import zipfile
 
 
 VARIABLE_LABELS_DICT_KEY, VALUE_LABELS_DICT_KEY= 'variable_labels_dict', 'value_labels_dict'
@@ -70,7 +73,6 @@ def get_per_language_labels(survey, path_prefixes=True, question_name_transform=
 
 
 def survey_to_spss_label_syntaxes(survey):
-
     exportable_label_mappings= get_per_language_labels(survey)
 
     syntaxes= dict()
@@ -79,10 +81,20 @@ def survey_to_spss_label_syntaxes(survey):
         value_labels_dict= exportable_label_mappings.get(language, dict()).get(VALUE_LABELS_DICT_KEY)
 
         spss_label_syntax_string= from_dicts(variable_labels_dict, value_labels_dict)
-        syntaxes[language]= spss_label_syntax_string
+        syntaxes[language]= spss_label_syntax_string.encode('UTF-8')
 
     return syntaxes
 
+def survey_to_spss_label_zip(survey, base_name):
+    syntaxes= survey_to_spss_label_syntaxes(survey)
+    zip_io= io.BytesIO()
+    with zipfile.ZipFile(zip_io, 'w', compression=zipfile.ZIP_DEFLATED) as zip_out_zipfile:
+        for language, syntax_file_contents in syntaxes.iteritems():
+            syntax_file_name= '{}_{}_labels.sps'.format(base_name, language)
+            zip_out_zipfile.writestr(syntax_file_name, syntax_file_contents)
+
+    zip_io.seek(0)
+    return zip_io
 
 # TODO: Does this maybe belong in KoBoCAT?
 def get_multi_select_disaggregated_question_names(question, group_delimiter='/'):
