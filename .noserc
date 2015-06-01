@@ -1,2 +1,3 @@
 [nosetests]
+# To disable a test, use the decorator `@nose.plugins.attrib.attr('broken_test')`
 attr=!broken_test

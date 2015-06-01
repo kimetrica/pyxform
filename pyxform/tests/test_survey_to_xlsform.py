@@ -10,8 +10,6 @@ import unittest
 import os.path
 from tempfile import NamedTemporaryFile
 
-import nose.plugins.attrib
-
 from .. import survey_from
 from .. import constants
 from .. import survey_to_xlsform
@@ -29,7 +27,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
         self.xform_in_paths= [ os.path.join(self.xform_directory_path, filename) \
                         for filename in os.listdir(self.xform_directory_path)]
-
 
     @staticmethod
     def _export_and_reimport(original_survey, export_format='xls', warnings=None):
@@ -59,9 +56,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
             return reimported_survey
 
-
-    # FIXME: Failing non-essential test.
-    @nose.plugins.attrib.attr('broken_test')
     def test_consistent_export(self):
         '''
         Test that exporting a form to CSV and XLS results in the same data.
@@ -76,7 +70,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
             csv_survey= self._export_and_reimport(xform_survey, 'csv')
 
             self.assertEqual(xls_survey, csv_survey, 'XLS and CSV XLSForm mismatch for "{}".'.format(xform_in_p))
-
 
     def test_unicode(self):
         '''
@@ -96,7 +89,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         # Check that the first question's Unicode label was preserved.
         xls_question_label= xls_survey[constants.CHILDREN][0][constants.LABEL]
         self.assertEqual(xls_question_label, expected_question_label)
-
 
     def test_all_question_types_kf2(self):
         '''
@@ -140,7 +132,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
             self.assertEqual(get_xform_question_type(xform_child['type']), get_xform_question_type(expected_type))
             self.assertEqual(get_xform_question_type(xls_child['type']), get_xform_question_type(expected_type))
 
-
     def test_question_types_imported_in_order_kf1(self):
         '''
         tests the order and types match the expected output for a KoBoForm 1
@@ -172,7 +163,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
             question_types_list.append( (q['name'], q['type']) )
         self.assertListEqual(question_types_list, expected_qtypes_list)
 
-
     def test_translations(self):
         '''
         Test that XForms with translations can be imported successfully and that
@@ -195,7 +185,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
 
                 self.assertEqual(xlsform_label_english, xform_label_english)
                 self.assertEqual(xlsform_label_not_english, xform_label_not_english)
-
 
     def test_cascading_select_graceful_failure(self):
         '''
@@ -231,7 +220,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
                 self.assertEqual(question_choices[0]['name'], XlsFormExporter.CASCADING_SELECT_SAD_CHOICE_NAME)
                 self.assertEqual(question_choices[0]['label'], XlsFormExporter.CASCADING_SELECT_SAD_CHOICE_LABEL)
 
-
     def test_import_export_filelike_obj(self):
         '''
         Test that XLSForms can be imported from and exported to file-like objects.
@@ -262,7 +250,6 @@ class Test_SurveyToXlsForm(unittest.TestCase):
         csv_filelike_obj= csv_survey_from_path.to_csv()
         csv_survey_reimport= survey_from.csv(filelike_obj=csv_filelike_obj)
         self.assertEqual(csv_survey_from_path, csv_survey_reimport)
-
 
     def test_export_group(self):
         '''
