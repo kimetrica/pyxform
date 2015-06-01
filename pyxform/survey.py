@@ -54,7 +54,6 @@ class Survey(Section):
         }
     )
 
-
     def validate(self):
         if self.id_string in [None, 'None']:
             raise PyXFormError('Survey cannot have an empty id_string')
@@ -473,13 +472,11 @@ class Survey(Section):
         '''
         Convert the survey to a XML XForm.
 
-
         :param str path: Optional filesystem path to the desired output file.
         :param list warnings: Optional list into which any warnings generated during export will be appended.
         :returns: If the 'path' parameter was omitted, nothing. Otherwise, a buffer containing the exported form.
         :rtype: NoneType or 'StringIO.StringIO'
         '''
-
 
         if path:
             self.print_xform_to_file(path, warnings=warnings)
@@ -493,7 +490,6 @@ class Survey(Section):
         documentation.
         '''
 
-
         return pyxform.survey_to_xlsform.to_xls(self, path, warnings=warnings)
 
 
@@ -503,7 +499,6 @@ class Survey(Section):
         documentation.
         '''
 
-
         return pyxform.survey_to_xlsform.to_csv(self, path, warnings=warnings, koboform=koboform)
 
 
@@ -512,6 +507,5 @@ class Survey(Section):
         Wrapper around 'pyxform.survey_to_xlsform.to_ssjson'; see that function for
         documentation.
         '''
-
 
         return pyxform.survey_to_xlsform.to_ssjson(self, path, warnings=warnings)

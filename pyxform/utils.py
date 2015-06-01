@@ -89,12 +89,10 @@ def get_pyobj_from_json(str_or_path):
         doc = json.loads(str_or_path)
     return doc
 
-
 def flatten(li):
     for subli in li:
         for it in subli:
             yield it
-
 
 def sheet_to_csv(workbook_path, csv_path, sheet_name):
     wb = xlrd.open_workbook(workbook_path)

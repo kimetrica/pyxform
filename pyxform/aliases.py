@@ -55,7 +55,6 @@ settings_header = {
     C.SUBMISSION_URL: C.SUBMISSION_URL
 }
 
-
 # TODO: Check on bind prefix approach in json.
 # Conversion dictionary from user friendly column names to meaningful values
 survey_header = {
