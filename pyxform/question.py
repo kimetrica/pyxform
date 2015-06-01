@@ -1,8 +1,14 @@
-from utils import node
-from survey_element import SurveyElement
-from question_type_dictionary import QUESTION_TYPE_DICT
-from errors import PyXFormError
-from pyxform import constants
+
+from __future__ import unicode_literals
+
+from .                          import constants
+from .aliases                   import get_xform_question_type
+from .aliases                   import get_xlsform_question_type
+from .errors                    import PyXFormError
+from .question_type_dictionary  import QUESTION_TYPE_DICT
+from .section                   import Section
+from .survey_element            import SurveyElement
+from .utils                     import node
 
 
 class Question(SurveyElement):
@@ -36,6 +42,71 @@ class Question(SurveyElement):
         return None
 
 
+    def is_xform_type(self, xform_type):
+        if self.get(constants.TYPE):
+            return get_xform_question_type(self.get(constants.TYPE)) == xform_type
+        else:
+            raise Exception('Question named "{}" has no specified type.'.format(self.get(constants.NAME)))
+
+
+    def is_multiple_choice(self):
+        return False
+
+
+    def is_multi_select(self):
+        return False
+
+
+    def is_single_select(self):
+        return False
+
+
+    def is_decimal(self):
+        return False
+
+
+    def is_integer(self):
+        return False
+
+
+    def is_number(self):
+        return self.is_decimal() or self.is_integer()
+
+
+    def is_image(self):
+        return False
+
+
+    def is_audio(self):
+        return False
+
+
+    def is_video(self):
+        return False
+
+
+    def is_binary(self):
+        return False
+
+
+    @property
+    def group(self):
+        '''
+        Get the question's immediately enclosing group, if any.
+
+        :rtype: pyxform.section.Section
+        '''
+
+        parent= self.get(constants.PARENT)
+        while parent:
+            if isinstance(parent, Section):
+                break
+
+            parent= parent.get(constants.PARENT)
+
+        return parent
+
+
 class InputQuestion(Question):
     """
     This control string is the same for: strings, integers, decimals,
@@ -49,12 +120,12 @@ class InputQuestion(Question):
         for key, value in control_dict.items():
             control_dict[key] = survey.insert_xpaths(value)
         control_dict['ref'] = self.get_xpath()
-        
+
         result = node(**control_dict)
         if label_and_hint:
             for element in self.xml_label_and_hint():
                 result.appendChild(element)
-        
+
         # Input types are used for selects with external choices sheets.
         if self['query']:
             choice_filter = self.get('choice_filter')
@@ -64,6 +135,14 @@ class InputQuestion(Question):
                 query += '[' + choice_filter + ']'
             result.setAttribute('query', query)
         return result
+
+
+    def is_decimal(self):
+        return self.is_xform_type(constants.DECIMAL_XFORM)
+
+
+    def is_integer(self):
+        return self.is_xform_type(constants.INT_XFORM)
 
 
 class TriggerQuestion(Question):
@@ -94,6 +173,28 @@ class UploadQuestion(Question):
             *self.xml_label_and_hint(),
             **control_dict
             )
+
+    def is_image(self):
+        return get_xlsform_question_type(self[constants.TYPE]) == constants.IMAGE_XLSFORM
+
+
+    def is_audio(self):
+        return get_xlsform_question_type(self[constants.TYPE]) == constants.AUDIO_XLSFORM
+
+
+    def is_video(self):
+        return get_xlsform_question_type(self[constants.TYPE]) == constants.VIDEO_XLSFORM
+
+
+    def is_binary(self):
+        xlsform_binary= self.is_image() or self.is_audio() or self.is_video()
+        xform_binary= get_xform_question_type(self[constants.TYPE]) == constants.BINARY_XFORM
+
+        if not (xlsform_binary or xform_binary):
+            print 'WARNING: \'UploadQuestion\' "{}" was not detected as a binary question.'.format(self)
+
+        return True
+
 
 class Option(SurveyElement):
 
@@ -129,10 +230,10 @@ class Option(SurveyElement):
 #        itemset_children = [node('value', ref='name'), node('label', ref=itemset_label_ref)]
 #        result.appendChild(node('itemset', *itemset_children, nodeset=nodeset))
 #        return result
-#        
+#
 #class SelectOneQuestion(MultipleChoiceQuestion):
 #    pass
-    
+
 class MultipleChoiceQuestion(Question):
 
     def __init__(self, *args, **kwargs):
@@ -152,8 +253,8 @@ class MultipleChoiceQuestion(Question):
     def validate(self):
         Question.validate(self)
         descendants = self.iter_descendants()
-        descendants.next() # iter_descendants includes self; we need to pop it 
-        for choice in descendants: 
+        descendants.next() # iter_descendants includes self; we need to pop it
+        for choice in descendants:
             choice.validate()
 
     def xml_control(self):
@@ -187,13 +288,31 @@ class MultipleChoiceQuestion(Question):
     def is_cascading_select(self):
         '''
         Determine whether or not this is a cascading-select question.
-        
+
         :rtype: bool
         '''
-        
+
         return bool((not self.get(constants.CHILDREN)) and self.get(constants.ITEMSET_XFORM))
 
 
+    def is_multiple_choice(self):
+        return True
+
+
+    def is_multi_select(self):
+        return self.is_xform_type(constants.SELECT_ALL_THAT_APPLY_XFORM)
+
+
+    def is_single_select(self):
+        return self.is_xform_type(constants.SELECT_ONE_XFORM)
+
+
+    @property
+    def options(self):
+        return self.get(constants.CHILDREN)
+
+
+# TODO: Utilize or remove this.
 class SelectOneQuestion(MultipleChoiceQuestion):
     def __init__(self, *args, **kwargs):
         super(SelectOneQuestion, self).__init__(*args, **kwargs)
