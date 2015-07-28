@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import io
 import re
 import json
 import copy
@@ -171,7 +172,10 @@ def ConvertXmlToDict(root, dictclass=XmlDictObject):
 
 
 def create_survey_element_from_xml(xml_file):
-    sb = XFormToDictBuilder(xml_file)
+    if isinstance(xml_file, basestring):
+        # xml_file may be a string of markup instead of a file-like object
+        xml_file = io.BytesIO(xml_file)
+    sb = XFormToDictBuilder(filelike_obj=xml_file)
     return sb.survey()
 
 
