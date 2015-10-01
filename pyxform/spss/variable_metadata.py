@@ -10,11 +10,16 @@ from collections import namedtuple
 import json
 import re
 
-from .utilities import get_spss_variable_name
-from .utilities import get_spss_variable_label
-from .utilities import get_spss_value_label
 
-INDENT_STRING= '    '
+from .utilities import (get_spss_variable_name,
+                        get_spss_label,
+                        SPSS_SYNTAX_FILE_LINE_BYTE_LIMIT,
+                        SPSS_VARIABLE_NAME_BYTE_LIMIT,
+                        SPSS_VARIABLE_LABEL_BYTE_LIMIT,
+                        SPSS_VALUE_LABEL_BYTE_LIMIT,
+                        INDENT_STRING,
+                        )
+
 
 class ValueLabel:
 
@@ -32,7 +37,9 @@ class ValueLabel:
         '''Read-only accessor to the value's label.'''
         return self._label
 
+
 class VariableLabel:
+
     def __init__(self, variable_name, variable_label, value_labels=None):
         self._name= variable_name
         self._label= variable_label
@@ -66,7 +73,6 @@ class VariableMetadata(namedtuple('_VariableMetadata', 'name, label, value_mappi
     :param dict value_mappings: A dictionary that maps encoded value names (e.g. "0", "1") to value labels (e.g. "Female", "Male")
     '''
 
-
     def _to_spss_syntax(self):
         '''
         Output the syntax file lines that correspond to this object.
@@ -75,16 +81,23 @@ class VariableMetadata(namedtuple('_VariableMetadata', 'name, label, value_mappi
         :rtype: tuple(str, str)
         '''
 
+        VARIABLE_LABEL_LINE_TEMPLATE= INDENT_STRING * 2 + '"{}"\n'
+        VALUE_LABEL_LINE_TEMPLATE= INDENT_STRING * 3 + '"{}"\n'
+
         spss_variable_name= get_spss_variable_name(self.name)
 
         if self.label is None:
-            variable_label_line= None
+            variable_label_lines= None
         else:
-            spss_variable_label= get_spss_variable_label(self.label)
-            # Repeat any double quote characters found in the label.
-            spss_variable_label= spss_variable_label.replace('"', '""')
+            # Ensure that the line does not go over limit.
+            variable_label_byte_limit= SPSS_SYNTAX_FILE_LINE_BYTE_LIMIT \
+                - len(VARIABLE_LABEL_LINE_TEMPLATE.encode('UTF-8')) \
+                + len('{}'.encode('UTF-8'))
+            spss_variable_label= get_spss_label(self.label,
+                                                min(variable_label_byte_limit, SPSS_VARIABLE_LABEL_BYTE_LIMIT))
 
-            variable_label_line= INDENT_STRING + '/ ' + spss_variable_name + ' "' + spss_variable_label + '"'
+            variable_label_lines= INDENT_STRING + '{}\n'.format(spss_variable_name)
+            variable_label_lines+= VARIABLE_LABEL_LINE_TEMPLATE.format(spss_variable_label)
 
         # There aren't always value labels to report.
         if self.value_mappings is None:
@@ -92,16 +105,20 @@ class VariableMetadata(namedtuple('_VariableMetadata', 'name, label, value_mappi
         else:
             value_label_lines= INDENT_STRING + '/ ' + spss_variable_name + '\n'
 
-            sorted_value_names= self.value_mappings.keys()
-            sorted_value_names.sort()
+            sorted_value_names= sorted(self.value_mappings.iterkeys())
             for value_name in sorted_value_names:
-                spss_value_label= get_spss_value_label(self.value_mappings[value_name])
-                # Repeat any double quote characters found in the label.
-                spss_value_label= spss_value_label.replace('"', '""')
+                # Ensure that the line does not go over limit.
+                value_label_line_limit= 250 \
+                    - len(VALUE_LABEL_LINE_TEMPLATE.encode('UTF-8')) \
+                    + len('{}'.encode('UTF-8'))
 
-                value_label_lines+= (INDENT_STRING * 2) + ' \'' + value_name + '\' "' + spss_value_label + '"'
+                spss_value_label= get_spss_label(self.value_mappings[value_name],
+                                                 min(value_label_line_limit, SPSS_VALUE_LABEL_BYTE_LIMIT))
 
-        return variable_label_line, value_label_lines
+                value_label_lines+= (INDENT_STRING * 2) + '\'' + value_name + '\'\n'
+                value_label_lines+= VALUE_LABEL_LINE_TEMPLATE.format(spss_value_label)
+
+        return variable_label_lines, value_label_lines
 
 
     @classmethod

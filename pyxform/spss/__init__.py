@@ -20,9 +20,7 @@ from .main import from_dicts
 from .spss import survey_to_spss_label_syntaxes
 from .spss import survey_to_spss_label_zip
 from .utilities import get_spss_variable_name
-from .utilities import get_spss_variable_label
-from .utilities import get_spss_value_label
-
+from .utilities import get_spss_label
 
 __version__= '0.2'
 

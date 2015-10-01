@@ -6,11 +6,13 @@ Created on Feb 23, 2015
 
 
 from __future__ import unicode_literals
+import re
 
-
+SPSS_SYNTAX_FILE_LINE_BYTE_LIMIT= 250
 SPSS_VARIABLE_NAME_BYTE_LIMIT= 64
 SPSS_VARIABLE_LABEL_BYTE_LIMIT= 256
 SPSS_VALUE_LABEL_BYTE_LIMIT= 120
+INDENT_STRING= '\t'
 
 
 def truncate_string(original_string, byte_limit):
@@ -61,11 +63,16 @@ def get_spss_variable_name(variable_name):
     return spss_variable_name
 
 
-def get_spss_variable_label(variable_label):
-    spss_variable_label= truncate_string(variable_label, SPSS_VARIABLE_LABEL_BYTE_LIMIT)
-    return spss_variable_label
+def get_spss_label(label, max_byte_length):
+    # Replace characters that result in a new line with a space character.
+    result= re.compile(r'[\n\r\f\v]').sub(' ', label)
 
+    # Pre-emptively truncate.
+    result= truncate_string(result, max_byte_length)
 
-def get_spss_value_label(value_label):
-    spss_value_label= truncate_string(value_label, SPSS_VALUE_LABEL_BYTE_LIMIT)
-    return spss_value_label
+    # Account for and execute the necessary doubling of double quotes.
+    double_quote_count= result.count('"')
+    pre_doubling_byte_limit= max_byte_length - (double_quote_count * len('"'.encode('UTF-8')))
+    result= truncate_string(result, pre_doubling_byte_limit).replace('"', '""')
+
+    return result
