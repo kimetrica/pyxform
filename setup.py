@@ -5,7 +5,7 @@ setup(
     version='0.9.22',
     author='modilabs',
     author_email='info@modilabs.org',
-    packages=['pyxform', 'pyxform.odk_validate'],
+    packages=['pyxform', 'pyxform.odk_validate', 'pyxform.spss', 'pyxform.utilities'],
     package_dir={'pyxform': 'pyxform'},
     package_data={
         'pyxform': [
