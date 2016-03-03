@@ -83,7 +83,7 @@ def _cleanup_errors(error_message):
             if line.startswith('java.lang.NullPointerException'):
                 continue
             k.append(line)
-    return u'\n'.join(k)
+    return '\n'.join(k).decode('ascii', errors="replace")
 
 
 def check_xform(path_to_xform):
